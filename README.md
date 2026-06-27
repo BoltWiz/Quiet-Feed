@@ -299,3 +299,80 @@ Facebook and Meta are trademarks of Meta Platforms, Inc. Quiet Feed is an indepe
 ## License
 
 This repository does not currently include a license file. Until a license is added, default copyright law applies; do not assume permission to copy, modify, or redistribute the project beyond what applicable law allows.
+The suite covers feature defaults, classification, message contracts, storage validation, manifest resources, hook/fallback coordination, accessible confirmations, and backup parsing.
+
+### Run the browser smoke test
+
+Start the local test server:
+
+```bash
+node tests/browser/popup-test-server.js
+```
+
+Then open:
+
+```text
+http://127.0.0.1:4173/src/popup/popup-test.html
+```
+
+The browser harness exercises category tabs, tooltips, confirmation dialogs, batch-action compatibility, pending-save locks, filter health, and reload prompts using the production popup code.
+
+### Preview the UI
+
+With the same local server running, use these mock-data preview pages:
+
+- `http://127.0.0.1:4173/preview/popup.html`
+- `http://127.0.0.1:4173/preview/options.html`
+
+## Contributing
+
+Contributions are welcome. To propose a change:
+
+1. Fork the repository and create a focused branch.
+2. Keep production code readable and dependency-free unless a dependency has a clear, documented benefit.
+3. Add or update tests for behavioral changes.
+4. Run `npm test` before opening a pull request.
+5. Describe the Facebook surface affected and include screenshots for interface changes.
+
+When updating selectors or hook targets, include enough context for another contributor to understand what Facebook changed and why the new rule is safe.
+
+## Support
+
+Use the repository's **Issues** tab for bug reports, compatibility problems, and feature requests.
+
+A useful bug report includes:
+
+- Chrome version
+- Quiet Feed version
+- Facebook URL where the issue occurred
+- Filter-health status shown by the popup
+- The affected setting
+- A screenshot with personal information removed
+
+Please do not post account credentials, cookies, private messages, or other sensitive Facebook data.
+
+## Roadmap
+
+Potential next steps include:
+
+- Automated CI for the Node and browser suites
+- Packaged release artifacts and clearer update instructions
+- Compatibility checks for additional Chromium browsers
+- Additional languages for interface labels and text classification
+- More targeted counters for optional distraction filters
+
+Roadmap items are proposals, not release commitments.
+
+## Project status
+
+Quiet Feed is under active development. Facebook compatibility is maintained as its page structure and private modules evolve.
+
+## Authors and acknowledgments
+
+Quiet Feed is maintained by its contributors. Thanks to everyone who reports interface changes, tests new Facebook layouts, and improves the readable filtering rules.
+
+Facebook and Meta are trademarks of Meta Platforms, Inc. Quiet Feed is an independent project and is not affiliated with, endorsed by, or sponsored by Meta.
+
+## License
+
+This repository does not currently include a license file. Until a license is added, default copyright law applies; do not assume permission to copy, modify, or redistribute the project beyond what applicable law allows.
