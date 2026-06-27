@@ -17,12 +17,15 @@
 
     <main class="layout">
       <section class="hero">
+        <div class="hero__copy">
         <span class="eyebrow">Settings</span>
-        <h1>A quieter Facebook feed.</h1>
-        <p>Every setting is stored locally. Reloading Facebook after a change ensures it is fully applied.</p>
-        <div class="filter-health" id="filter-health" data-status="waiting">
+        <h1>A quieter<br>Facebook feed.</h1>
+        <p>Every setting stays on this device. Tune out the noise, keep what matters, and get back to your feed.</p>
+        <div class="filter-health" id="filter-health" data-status="waiting" role="status">
           <span class="filter-health__dot" aria-hidden="true"></span>
           <span id="filter-health-label">Checking filter status…</span>
+          <button class="filter-health__action" id="health-reload" type="button" hidden>Reload Facebook</button>
+        </div>
         </div>
       </section>
 

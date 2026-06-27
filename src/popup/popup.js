@@ -7,18 +7,23 @@
   const reloadButton = document.querySelector("#reload-facebook");
   const saveStatus = document.querySelector("#save-status");
   const tabButtons = Array.from(document.querySelectorAll("[data-tab]"));
+  const pendingKeys = new Set();
   let settings = null;
   let activeTab = "feed";
 
   document.querySelector("#version").textContent = `v${chrome.runtime.getManifest().version}`;
   document.querySelector("#open-options").addEventListener("click", openOptions);
   reloadButton.addEventListener("click", reloadFacebook);
+  document.querySelector("#health-reload").addEventListener("click", reloadFacebook);
   document.querySelector("#dismiss-reload").addEventListener("click", () => {
     reloadAlert.hidden = true;
   });
   tabButtons.forEach((button) => {
     button.addEventListener("click", () => selectTab(button.dataset.tab));
     button.addEventListener("keydown", handleTabKeydown);
+  });
+  document.querySelectorAll("[data-category-action]").forEach((button) => {
+    button.addEventListener("click", () => applyCategoryAction(button.dataset.categoryAction));
   });
 
   loadState().catch(showError);
@@ -33,11 +38,17 @@
   });
 
   async function loadState() {
-    const response = await chrome.runtime.sendMessage({ type: "QF_GET_STATE" });
+    const [response, stored] = await Promise.all([
+      chrome.runtime.sendMessage({ type: "QF_GET_STATE" }),
+      chrome.storage.local.get(STORAGE_KEYS.popupTab),
+    ]);
     if (!response?.ok) throw new Error(response?.error || "Could not load settings");
+    if (["feed", "distractions"].includes(stored[STORAGE_KEYS.popupTab])) {
+      activeTab = stored[STORAGE_KEYS.popupTab];
+    }
     settings = mergeSettings(response.settings);
     renderStats(response.stats);
-    renderFeatures();
+    selectTab(activeTab, false);
     refreshFilterHealth();
   }
 
@@ -51,12 +62,17 @@
   function renderFeatures() {
     if (!settings) return;
     const groups = activeTab === "feed" ? ["feed", "behavior"] : ["distractions"];
+    const features = FEATURES.filter((feature) => groups.includes(feature.group));
     featureList.replaceChildren(
-      ...FEATURES.filter((feature) => groups.includes(feature.group)).map(createFeatureRow),
+      ...features.map(createFeatureRow),
     );
+    const categoryPending = features.some((feature) => pendingKeys.has(feature.key));
+    document.querySelectorAll("[data-category-action]").forEach((button) => {
+      button.disabled = categoryPending;
+    });
   }
 
-  function selectTab(tab) {
+  function selectTab(tab, persist = true) {
     if (!tabButtons.some((button) => button.dataset.tab === tab)) return;
     activeTab = tab;
     tabButtons.forEach((button) => {
@@ -68,6 +84,11 @@
       .querySelector("#filter-panel")
       .setAttribute("aria-labelledby", activeTab === "feed" ? "tab-feed" : "tab-distractions");
     renderFeatures();
+    if (persist) {
+      chrome.storage.local
+        .set({ [STORAGE_KEYS.popupTab]: activeTab })
+        .catch((error) => console.debug("Could not remember popup tab", error));
+    }
   }
 
   function handleTabKeydown(event) {
@@ -81,21 +102,35 @@
   }
 
   function createFeatureRow(feature) {
-    const disabled = feature.dependsOn && !settings[feature.dependsOn];
+    const dependencyDisabled = feature.dependsOn && !settings[feature.dependsOn];
+    const pending = pendingKeys.has(feature.key);
+    const disabled = dependencyDisabled || pending;
     const row = document.createElement("div");
     row.className = "feature-row";
     row.setAttribute("aria-disabled", String(Boolean(disabled)));
+    row.setAttribute("aria-busy", String(pending));
 
     const copy = document.createElement("div");
     copy.className = "feature-copy";
+    const heading = document.createElement("div");
+    heading.className = "feature-heading";
     const label = document.createElement("label");
     label.className = "feature-label";
     label.htmlFor = `feature-${feature.key}`;
     label.textContent = feature.label;
-    const description = document.createElement("p");
-    description.className = "feature-description";
-    description.textContent = feature.description;
-    copy.append(label, description);
+    const info = document.createElement("button");
+    info.type = "button";
+    info.className = "feature-info";
+    info.setAttribute("aria-label", `About ${feature.label}`);
+    const tooltip = document.createElement("span");
+    tooltip.className = "feature-tooltip";
+    tooltip.id = `tooltip-${feature.key}`;
+    tooltip.setAttribute("role", "tooltip");
+    tooltip.textContent = feature.description;
+    info.setAttribute("aria-describedby", tooltip.id);
+    info.append("i", tooltip);
+    heading.append(label, info);
+    copy.append(heading);
 
     const switchLabel = document.createElement("label");
     switchLabel.className = "switch";
@@ -112,25 +147,95 @@
     track.setAttribute("aria-hidden", "true");
     switchLabel.append(input, track);
     row.append(copy, switchLabel);
+    row.addEventListener("click", (event) => {
+      if (disabled || event.target.closest("label, input, button")) return;
+      input.click();
+    });
     return row;
   }
 
   async function updateFeature(key, value) {
+    if (pendingKeys.has(key)) return;
     const feature = FEATURES.find((item) => item.key === key);
     if (!(await confirmFeatureChange(feature, value))) {
       renderFeatures();
       return;
     }
+    if (pendingKeys.has(key)) return;
 
-    const response = await chrome.runtime.sendMessage({ type: "QF_SET_FEATURE", key, value });
-    if (!response?.ok) {
-      renderFeatures();
-      return showError(new Error(response?.error || "Could not save setting"));
-    }
-    settings = mergeSettings(response.settings);
+    pendingKeys.add(key);
     renderFeatures();
+    try {
+      const response = await chrome.runtime.sendMessage({ type: "QF_SET_FEATURE", key, value });
+      if (!response?.ok) throw new Error(response?.error || "Could not save setting");
+      settings = mergeSettings(response.settings);
+    } catch (error) {
+      showError(error);
+      return;
+    } finally {
+      pendingKeys.delete(key);
+      renderFeatures();
+    }
     saveStatus.hidden = true;
     await showReloadPrompt();
+  }
+
+  async function applyCategoryAction(action) {
+    if (!settings) return;
+    const features = getActiveFeatures();
+    if (features.some((feature) => pendingKeys.has(feature.key))) return;
+    const changes = Object.fromEntries(
+      features.map((feature) => [
+        feature.key,
+        action === "enable" ? true : action === "disable" ? false : feature.defaultValue,
+      ]),
+    );
+    if (Object.entries(changes).every(([key, enabled]) => settings[key] === enabled)) return;
+    const suggested = features.find((feature) => feature.key === "removeSuggested");
+    if (
+      changes.removeSuggested &&
+      !settings.removeSuggested &&
+      !(await confirmFeatureChange(suggested, true))
+    ) {
+      return;
+    }
+
+    features.forEach((feature) => pendingKeys.add(feature.key));
+    renderFeatures();
+    try {
+      settings = mergeSettings(await saveFeatureChanges(changes));
+    } catch (error) {
+      showError(error);
+      return;
+    } finally {
+      features.forEach((feature) => pendingKeys.delete(feature.key));
+      renderFeatures();
+    }
+    saveStatus.hidden = true;
+    await showReloadPrompt();
+  }
+
+  function getActiveFeatures() {
+    const groups = activeTab === "feed" ? ["feed", "behavior"] : ["distractions"];
+    return FEATURES.filter((feature) => groups.includes(feature.group));
+  }
+
+  async function saveFeatureChanges(changes) {
+    const response = await chrome.runtime.sendMessage({ type: "QF_SET_FEATURES", value: changes });
+    if (response?.ok) return response.settings;
+    if (!/unknown quiet feed message/i.test(response?.error || "")) {
+      throw new Error(response?.error || "Could not save settings");
+    }
+
+    // A freshly loaded popup can briefly outlive an older extension service worker.
+    // Fall back to the single-feature contract that earlier workers understand.
+    let latestSettings = settings;
+    for (const [key, value] of Object.entries(changes)) {
+      const fallback = await chrome.runtime.sendMessage({ type: "QF_SET_FEATURE", key, value });
+      if (!fallback?.ok) throw new Error(fallback?.error || "Could not save settings");
+      latestSettings = fallback.settings;
+    }
+    return latestSettings;
   }
 
   function confirmFeatureChange(feature, value) {
@@ -180,6 +285,8 @@
     const health = document.querySelector("#filter-health");
     health.dataset.status = value.status;
     document.querySelector("#filter-health-label").textContent = value.label;
+    const action = document.querySelector("#health-reload");
+    action.hidden = !value.tabCount || !["fallback", "waiting"].includes(value.status);
   }
 
   async function openOptions() {

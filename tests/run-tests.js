@@ -184,6 +184,16 @@ test("DOM cleanup releases disconnected entries and their placeholders", () => {
   assert.deepEqual(removed, ["remove"]);
 });
 
+test("batch feature updates reject unknown or non-boolean values", () => {
+  assert.deepEqual(shared.sanitizeFeatureChanges({ removeReels: false, removeStories: true }), {
+    removeReels: false,
+    removeStories: true,
+  });
+  assert.equal(shared.sanitizeFeatureChanges({ unknownFeature: true }), null);
+  assert.equal(shared.sanitizeFeatureChanges({ removeReels: "yes" }), null);
+  assert.equal(shared.sanitizeFeatureChanges({}), null);
+});
+
 asyncTest("serialized mutations cannot overlap and recover after failures", async () => {
   const runSerially = shared.createSerialExecutor();
   const order = [];
@@ -246,6 +256,8 @@ test("filtered items support undo and clients expose filter health", () => {
   assert.equal(content.includes('showButton.textContent = "Show this item"'), true);
   assert.equal(content.includes('element.dataset.qfAllowed = "true"'), true);
   assert.equal(pageHook.includes('"Show this item"'), true);
+  assert.equal(content.includes("revealedItemKeys.has(itemKey)"), true);
+  assert.equal(pageHook.includes("revealedItemKeys.has(itemKey)"), true);
   assert.equal(popup.includes('type: "QF_GET_FILTER_HEALTH"'), true);
   assert.equal(options.includes('type: "QF_GET_FILTER_HEALTH"'), true);
 });
@@ -279,8 +291,36 @@ test("popup exposes every setting through accessible category tabs", () => {
   assert.equal(html.includes('data-tab="distractions"'), true);
   assert.equal(popup.includes('["feed", "behavior"]'), true);
   assert.equal(popup.includes('["distractions"]'), true);
-  assert.equal(popup.includes("feature.defaultValue"), false);
+  assert.equal(popup.includes('feature.group !== "distractions" || feature.defaultValue'), false);
   assert.equal(popup.includes('event.key === "ArrowRight"'), true);
+  assert.equal(popup.includes('type: "QF_SET_FEATURES"'), true);
+  assert.equal(popup.includes("unknown quiet feed message"), true);
+  assert.equal(popup.includes("STORAGE_KEYS.popupTab"), true);
+  assert.equal(popup.includes("pendingKeys.add(key)"), true);
+  assert.equal(popup.includes('event.target.closest("label, input, button")'), true);
+});
+
+test("DOM fallback scans added subtrees instead of rescanning the document", () => {
+  const content = fs.readFileSync(path.join(root, "src", "content.js"), "utf8");
+  assert.equal(content.includes("new MutationObserver(handleMutations)"), true);
+  assert.equal(content.includes("pendingScanRoots.add(node)"), true);
+  assert.equal(content.includes("roots.filter((root) => root.isConnected).forEach(scanRoot)"), true);
+  assert.equal(content.includes("new MutationObserver(scheduleScan)"), false);
+});
+
+test("real-browser popup harness exercises interactive flows", () => {
+  for (const file of [
+    "tests/browser/chrome-mock.js",
+    "tests/browser/popup-test-runner.js",
+    "tests/browser/popup-test-server.js",
+  ]) {
+    assert.equal(fs.existsSync(path.join(root, file)), true, `Missing ${file}`);
+  }
+  const runner = fs.readFileSync(path.join(root, "tests", "browser", "popup-test-runner.js"), "utf8");
+  assert.equal(runner.includes('dataset.testStatus = "passed"'), true);
+  assert.equal(runner.includes("Suggested-content dialog opens"), true);
+  assert.equal(runner.includes("Toggle locks while saving"), true);
+  assert.equal(runner.includes("Description tooltip opens on focus"), true);
 });
 
 test("manifest loads primary hooks in MAIN world and fallback in isolation", () => {

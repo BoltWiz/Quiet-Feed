@@ -14,6 +14,7 @@
   let installed = false;
   const runtimeWaitDeadline = Date.now() + RUNTIME_WAIT_TIMEOUT;
   const activeTargets = new Set();
+  const revealedItemKeys = new Set();
   const pendingCounts = { reels: 0, suggested: 0, sponsored: 0 };
 
   window.addEventListener("message", receiveExtensionMessage);
@@ -172,15 +173,15 @@
       enabled("removeGroupSuggestions") &&
       (GROUP_SUGGESTION_TYPES.has(unitType) || canSubscribe || canJoin)
     ) {
-      return removed(payload.lastCmp, "suggested", "Removed group suggestion");
+      return removed(payload.lastCmp, "suggested", "Removed group suggestion", feedUnitId);
     }
 
     if (enabled("removeSuggested") && (canSubscribe || canJoin)) {
-      return removed(payload.lastCmp, "suggested", "Removed suggested content");
+      return removed(payload.lastCmp, "suggested", "Removed suggested content", feedUnitId);
     }
 
     if (enabled("removeSponsored") && isSponsored) {
-      return removed(payload.lastCmp, "sponsored", "Removed sponsored post");
+      return removed(payload.lastCmp, "sponsored", "Removed sponsored post", feedUnitId);
     }
 
     const storyId =
@@ -190,7 +191,7 @@
     if (storyId) {
       const storyType = relayField(storyId, "showcase_story_type");
       if (enabled("removeReels") && storyType === "SHOWCASE_SHORT_VIDEO") {
-        return removed(payload.lastCmp, "reels", "Removed reels");
+        return removed(payload.lastCmp, "reels", "Removed reels", storyId);
       }
 
       const homepageSuggestion = relayField(
@@ -204,19 +205,19 @@
         { $1: { location: "groups_tab" } },
       );
       if (enabled("removeSuggested") && (homepageSuggestion || groupSuggestion)) {
-        return removed(payload.lastCmp, "suggested", "Removed suggested content");
+        return removed(payload.lastCmp, "suggested", "Removed suggested content", storyId);
       }
     }
 
     return React.createElement("div", { className: "CometFeedUnit" }, payload.lastCmp);
   }
 
-  function removed(originalContent, category, label) {
-    return React.createElement(RemovedContent, { originalContent, category, label });
+  function removed(originalContent, category, label, itemKey) {
+    return React.createElement(RemovedContent, { originalContent, category, label, itemKey });
   }
 
-  function RemovedContent({ originalContent, category, label }) {
-    const [revealed, setRevealed] = React.useState(false);
+  function RemovedContent({ originalContent, category, label, itemKey }) {
+    const [revealed, setRevealed] = React.useState(() => Boolean(itemKey && revealedItemKeys.has(itemKey)));
     React.useEffect(() => {
       incrementCounter(category);
     }, []);
@@ -246,7 +247,10 @@
               "button",
               {
                 type: "button",
-                onClick: () => setRevealed(true),
+                onClick: () => {
+                  rememberRevealedItem(itemKey);
+                  setRevealed(true);
+                },
                 style: {
                   marginLeft: 12,
                   padding: "7px 11px",
@@ -286,6 +290,14 @@
         ),
       ),
     );
+  }
+
+  function rememberRevealedItem(itemKey) {
+    if (!itemKey) return;
+    revealedItemKeys.add(itemKey);
+    if (revealedItemKeys.size > 500) {
+      revealedItemKeys.delete(revealedItemKeys.values().next().value);
+    }
   }
 
   function HiddenSideAd() {

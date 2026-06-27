@@ -10,6 +10,7 @@ const {
   mergeSettings,
   mergeStats,
   isFeatureKey,
+  sanitizeFeatureChanges,
   isFacebookUrl,
   createSerialExecutor,
 } = QuietFeed;
@@ -56,6 +57,17 @@ function setFeature(key, value) {
   return runStorageMutation(async () => {
     const { settings } = await getState();
     settings[key] = value;
+    await chrome.storage.local.set({ [STORAGE_KEYS.settings]: settings });
+    return settings;
+  });
+}
+
+function setFeatures(value) {
+  const changes = sanitizeFeatureChanges(value);
+  if (!changes) return Promise.reject(new Error("Invalid feature updates"));
+  return runStorageMutation(async () => {
+    const { settings } = await getState();
+    Object.assign(settings, changes);
     await chrome.storage.local.set({ [STORAGE_KEYS.settings]: settings });
     return settings;
   });
@@ -185,6 +197,8 @@ async function handleMessage(message, sender) {
       return { ok: true, ...(await getState()) };
     case "QF_SET_FEATURE":
       return { ok: true, settings: await setFeature(message.key, message.value) };
+    case "QF_SET_FEATURES":
+      return { ok: true, settings: await setFeatures(message.value) };
     case "QF_INCREMENT_STATS":
       if (!sender.tab || !isFacebookUrl(sender.tab.url || "")) {
         throw new Error("Counter updates are accepted only from Facebook tabs.");

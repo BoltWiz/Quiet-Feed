@@ -11,6 +11,7 @@
 
   let settings = null;
   let toastTimer = null;
+  const pendingKeys = new Set();
 
   document.querySelector("#version").textContent = `v${chrome.runtime.getManifest().version}`;
   document.querySelector("#reset-stats").addEventListener("click", resetStats);
@@ -18,6 +19,7 @@
   document.querySelector("#export-settings").addEventListener("click", exportSettings);
   document.querySelector("#import-settings").addEventListener("change", importSettings);
   document.querySelector("#reload-facebook").addEventListener("click", reloadFacebook);
+  document.querySelector("#health-reload").addEventListener("click", reloadFacebook);
   document.querySelector("#dismiss-reload").addEventListener("click", () => {
     document.querySelector("#reload-alert").hidden = true;
   });
@@ -61,10 +63,12 @@
   }
 
   function createFeatureRow(feature) {
-    const disabled = feature.dependsOn && !settings[feature.dependsOn];
+    const pending = pendingKeys.has(feature.key);
+    const disabled = (feature.dependsOn && !settings[feature.dependsOn]) || pending;
     const row = document.createElement("div");
     row.className = "feature-row";
     row.setAttribute("aria-disabled", String(Boolean(disabled)));
+    row.setAttribute("aria-busy", String(pending));
 
     const copy = document.createElement("div");
     copy.className = "feature-copy";
@@ -91,23 +95,35 @@
     track.setAttribute("aria-hidden", "true");
     switchLabel.append(input, track);
     row.append(copy, switchLabel);
+    row.addEventListener("click", (event) => {
+      if (disabled || event.target.closest("label, input, button")) return;
+      input.click();
+    });
     return row;
   }
 
   async function updateFeature(key, value) {
+    if (pendingKeys.has(key)) return;
     const feature = FEATURES.find((item) => item.key === key);
     if (!(await confirmFeatureChange(feature, value))) {
       renderFeatures();
       return;
     }
+    if (pendingKeys.has(key)) return;
 
-    const response = await chrome.runtime.sendMessage({ type: "QF_SET_FEATURE", key, value });
-    if (!response?.ok) {
-      renderFeatures();
-      return showError(new Error(response?.error || "Could not save setting"));
-    }
-    settings = mergeSettings(response.settings);
+    pendingKeys.add(key);
     renderFeatures();
+    try {
+      const response = await chrome.runtime.sendMessage({ type: "QF_SET_FEATURE", key, value });
+      if (!response?.ok) throw new Error(response?.error || "Could not save setting");
+      settings = mergeSettings(response.settings);
+    } catch (error) {
+      showError(error);
+      return;
+    } finally {
+      pendingKeys.delete(key);
+      renderFeatures();
+    }
     await showReloadPrompt();
     showToast("Setting saved.");
   }
@@ -246,6 +262,8 @@
     const health = document.querySelector("#filter-health");
     health.dataset.status = value.status;
     document.querySelector("#filter-health-label").textContent = value.label;
+    const action = document.querySelector("#health-reload");
+    action.hidden = !value.tabCount || !["fallback", "waiting"].includes(value.status);
   }
 
   function showToast(message) {
