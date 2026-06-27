@@ -1,0 +1,9 @@
+{
+  "name": "quiet-feed-readable",
+  "private": true,
+  "version": "2.1.0",
+  "description": "Readable, no-build source for the Quiet Feed browser extension.",
+  "scripts": {
+    "test": "node tests/run-tests.js"
+  }
+}

@@ -1,0 +1,128 @@
+html,
+body {
+  width: 440px;
+  min-width: 440px;
+}
+
+body {
+  max-height: 600px;
+  overflow-y: auto;
+  scrollbar-color: #343434 transparent;
+  scrollbar-width: thin;
+}
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  min-height: 62px;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--line-soft);
+  background: rgba(5, 5, 5, 0.92);
+  backdrop-filter: blur(16px);
+}
+
+.header__icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+}
+
+.header__copy {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+  gap: 2px;
+}
+
+.header__copy strong {
+  overflow: hidden;
+  font-size: 15px;
+  font-weight: 550;
+  letter-spacing: -0.35px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.header__copy span {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.main {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+}
+
+.stats {
+  padding: 15px 16px;
+}
+
+.stats__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 12px;
+}
+
+.stat {
+  display: grid;
+  gap: 3px;
+}
+
+.stat + .stat {
+  padding-left: 14px;
+  border-left: 1px solid var(--line-soft);
+}
+
+.stat span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.stat strong {
+  font-size: 25px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 550;
+  letter-spacing: -1px;
+}
+
+.feature-description {
+  display: none;
+}
+
+.restart-alert,
+.save-status {
+  position: sticky;
+  bottom: 10px;
+  padding: 11px 13px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface-2);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+  font-size: 12px;
+}
+
+.restart-alert {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.restart-alert .button {
+  min-height: 32px;
+  padding-inline: 13px;
+  font-size: 12px;
+}
+
+.footer {
+  padding: 13px 16px 17px;
+  border-top: 1px solid var(--line-soft);
+  color: var(--muted);
+  font-size: 11px;
+  text-align: center;
+}

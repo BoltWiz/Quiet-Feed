@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Quiet Feed Settings</title>
+    <link rel="stylesheet" href="../shared/theme.css">
+    <link rel="stylesheet" href="options.css">
+  </head>
+  <body>
+    <header class="header">
+      <div class="header__inner">
+        <img src="../../icons/icon-48.png" alt="">
+        <div><strong>Quiet Feed</strong><span id="version"></span></div>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="hero">
+        <span class="eyebrow">Settings</span>
+        <h1>A quieter Facebook feed.</h1>
+        <p>Every setting is stored locally. Restarting Facebook after a change ensures it is fully applied.</p>
+      </section>
+
+      <div class="restart-alert panel" id="restart-alert" role="status" hidden>
+        <span><strong>Setting changed.</strong> Optionally restart Facebook to ensure it is fully applied.</span>
+        <button class="button button--primary" id="restart-facebook" type="button">Restart Facebook</button>
+      </div>
+
+      <section class="panel section" aria-labelledby="stats-heading">
+        <div class="section__header">
+          <div><span class="eyebrow">Activity</span><h2 id="stats-heading">Blocked content</h2></div>
+          <button class="button" id="reset-stats" type="button">Reset counters</button>
+        </div>
+        <div class="stats">
+          <div><span>Reels</span><strong id="stat-reels">0</strong></div>
+          <div><span>Suggested</span><strong id="stat-suggested">0</strong></div>
+          <div><span>Sponsored</span><strong id="stat-sponsored">0</strong></div>
+        </div>
+      </section>
+
+      <section class="panel section" aria-labelledby="feed-heading">
+        <div class="section__header"><div><span class="eyebrow">Filters</span><h2 id="feed-heading">Feed content</h2></div></div>
+        <div class="feature-list" id="feed-features"></div>
+      </section>
+
+      <section class="panel section" aria-labelledby="distractions-heading">
+        <div class="section__header"><div><span class="eyebrow">Filters</span><h2 id="distractions-heading">Other distractions</h2></div></div>
+        <div class="feature-list" id="distraction-features"></div>
+      </section>
+
+      <section class="panel section" aria-labelledby="data-heading">
+        <div class="section__header"><div><span class="eyebrow">Local data</span><h2 id="data-heading">Backup and reset</h2></div></div>
+        <div class="actions">
+          <button class="button" id="export-settings" type="button">Export settings</button>
+          <label class="button file-button">Import settings<input id="import-settings" type="file" accept="application/json"></label>
+          <button class="button" id="reset-settings" type="button">Restore defaults</button>
+        </div>
+      </section>
+    </main>
+
+    <div class="toast" id="toast" role="status" hidden></div>
+    <script src="../shared/features.js"></script>
+    <script src="options.js"></script>
+  </body>
+</html>
