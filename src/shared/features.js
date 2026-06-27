@@ -5,6 +5,7 @@
     settings: "quietFeedSettings",
     stats: "quietFeedStats",
     schema: "quietFeedSchemaVersion",
+    popupTab: "quietFeedPopupTab",
   });
 
   const SCHEMA_VERSION = 1;
@@ -135,6 +136,18 @@
     return FEATURES.some((feature) => feature.key === key);
   }
 
+  function sanitizeFeatureChanges(value) {
+    if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+    const entries = Object.entries(value);
+    if (
+      entries.length === 0 ||
+      entries.some(([key, enabled]) => !isFeatureKey(key) || typeof enabled !== "boolean")
+    ) {
+      return null;
+    }
+    return Object.fromEntries(entries);
+  }
+
   function isFacebookUrl(url) {
     try {
       const hostname = new URL(url).hostname;
@@ -174,6 +187,7 @@
     mergeSettings,
     mergeStats,
     isFeatureKey,
+    sanitizeFeatureChanges,
     isFacebookUrl,
     createSerialExecutor,
     pruneDisconnectedEntries,

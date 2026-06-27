@@ -1,5 +1,6 @@
 body {
   min-height: 100vh;
+  overflow-x: hidden;
 }
 
 .header {
@@ -13,17 +14,17 @@ body {
 
 .header__inner {
   display: flex;
-  width: min(100% - 40px, 980px);
-  min-height: 64px;
+  width: min(100% - 60px, 1199px);
+  min-height: 62px;
   align-items: center;
   gap: 10px;
   margin: 0 auto;
 }
 
 .header img {
-  width: 40px;
-  height: 40px;
-  border-radius: 11px;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
 }
 
 .header__inner > div {
@@ -32,8 +33,9 @@ body {
 }
 
 .header strong {
-  font-size: 15px;
-  font-weight: 550;
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: -0.35px;
 }
 
 .header span {
@@ -43,38 +45,44 @@ body {
 
 .layout {
   display: grid;
-  width: min(100% - 40px, 980px);
-  gap: 18px;
+  width: min(100% - 60px, 1199px);
+  gap: 14px;
   margin: 0 auto;
-  padding: 64px 0 80px;
+  padding: 30px 0 56px;
 }
 
 .hero {
-  padding: 26px 0 38px;
+  padding: 8px 0 30px;
+}
+
+.hero__copy {
+  align-self: center;
+  padding: 8px 0;
 }
 
 .hero h1 {
-  max-width: 720px;
+  max-width: 780px;
   margin: 10px 0 16px;
-  font-size: clamp(44px, 7vw, 78px);
-  font-weight: 550;
+  font-size: clamp(52px, 6vw, 82px);
+  font-weight: 500;
   letter-spacing: -0.055em;
-  line-height: 0.95;
+  line-height: 0.88;
 }
 
 .hero p {
-  max-width: 600px;
+  max-width: 560px;
   margin: 0;
   color: var(--muted);
-  font-size: 17px;
-  line-height: 1.45;
+  font-size: 18px;
+  letter-spacing: -0.18px;
+  line-height: 1.3;
 }
 
 .filter-health {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 18px;
+  margin-top: 16px;
   color: var(--muted);
   font-size: 13px;
 }
@@ -86,8 +94,18 @@ body {
   background: var(--warning);
 }
 
+.filter-health__action {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--blue);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+}
+
 .filter-health[data-status="advanced"] .filter-health__dot {
-  background: #55c982;
+  background: var(--success);
 }
 
 .filter-health[data-status="fallback"] .filter-health__dot {
@@ -105,8 +123,8 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 20px;
-  padding: 15px 18px;
+  gap: 14px;
+  padding: 12px 14px;
   background: var(--surface-2);
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.35);
 }
@@ -126,26 +144,28 @@ body {
 }
 
 .section {
-  padding: 24px;
+  padding: 22px;
 }
 
 .section__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 20px;
-  margin-bottom: 20px;
+  gap: 14px;
+  margin-bottom: 16px;
 }
 
 .section h2 {
   margin: 6px 0 0;
-  font-size: 25px;
-  font-weight: 550;
-  letter-spacing: -0.035em;
+  font-size: 32px;
+  font-weight: 500;
+  letter-spacing: -1px;
+  line-height: 1.13;
 }
 
 .feature-row {
-  min-height: 68px;
+  min-height: 62px;
+  padding-inline: 16px;
 }
 
 .stats {
@@ -154,15 +174,15 @@ body {
   gap: 1px;
   overflow: hidden;
   border: 1px solid var(--line-soft);
-  border-radius: 14px;
+  border-radius: 10px;
   background: var(--line-soft);
 }
 
 .stats > div {
   display: grid;
-  gap: 8px;
-  padding: 20px;
-  background: var(--canvas);
+  gap: 6px;
+  padding: 18px;
+  background: #101010;
 }
 
 .stats span {
@@ -171,16 +191,16 @@ body {
 }
 
 .stats strong {
-  font-size: 32px;
+  font-size: 42px;
   font-variant-numeric: tabular-nums;
-  font-weight: 550;
-  letter-spacing: -1.5px;
+  font-weight: 500;
+  letter-spacing: -2px;
 }
 
 .actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
 }
 
 .file-button {
@@ -200,9 +220,9 @@ body {
   right: 24px;
   bottom: 24px;
   max-width: min(360px, calc(100vw - 48px));
-  padding: 13px 16px;
+  padding: 11px 14px;
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: 10px;
   background: var(--surface-2);
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
 }
@@ -210,7 +230,7 @@ body {
 @media (max-width: 650px) {
   .layout {
     width: min(100% - 24px, 980px);
-    padding-top: 34px;
+    padding-top: 24px;
   }
 
   .header__inner {
@@ -218,7 +238,15 @@ body {
   }
 
   .section {
-    padding: 18px;
+    padding: 16px;
+  }
+
+  .hero {
+    padding-bottom: 30px;
+  }
+
+  .hero h1 {
+    font-size: clamp(44px, 15vw, 66px);
   }
 
   .section__header {
@@ -234,5 +262,9 @@ body {
 
   .reload-alert__actions {
     justify-content: flex-end;
+  }
+
+  .stats {
+    grid-template-columns: 1fr;
   }
 }

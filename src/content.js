@@ -9,9 +9,15 @@
     '[data-pagelet^="FeedUnit"]',
     '[data-pagelet*="FeedUnit"]',
   ].join(",");
+  const STORIES_SELECTOR = '[aria-label="Stories"], [aria-label="Tin"], [data-pagelet*="Stories"]';
+  const RIGHT_RAIL_SELECTOR = '[data-pagelet*="RightRail"], [role="complementary"]';
+  const NOTIFICATION_SELECTOR =
+    '[role="status"], [data-pagelet*="Toast"], [data-visualcompletion="ignore-dynamic"] [role="alert"]';
 
   const hiddenElements = new Map();
   const countedElements = new WeakSet();
+  const revealedItemKeys = new Set();
+  const pendingScanRoots = new Set();
   const pendingCounts = { reels: 0, suggested: 0, sponsored: 0 };
   let settings = null;
   let scanTimer = null;
@@ -44,7 +50,7 @@
       postSettingsToPage();
       if (fallbackActive) {
         restoreAll();
-        scheduleScan();
+        scheduleFullScan();
       }
     });
   }
@@ -95,8 +101,14 @@
     if (hookActive || fallbackActive) return;
     fallbackActive = true;
     scanDocument();
-    observer = new MutationObserver(scheduleScan);
-    observer.observe(document.documentElement, { childList: true, subtree: true });
+    observer = new MutationObserver(handleMutations);
+    observer.observe(document.documentElement, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["role", "aria-label", "data-pagelet"],
+      characterData: true,
+    });
     console.info("Quiet Feed: Facebook hooks unavailable; using DOM fallback filters.");
   }
 
@@ -106,10 +118,29 @@
     observer?.disconnect();
     observer = null;
     clearTimeout(scanTimer);
+    pendingScanRoots.clear();
     restoreAll();
   }
 
-  function scheduleScan() {
+  function handleMutations(records) {
+    records.forEach((record) => {
+      record.addedNodes.forEach((node) => {
+        if (node instanceof HTMLElement) pendingScanRoots.add(node);
+      });
+      if (record.type === "attributes" && record.target instanceof HTMLElement) {
+        pendingScanRoots.add(record.target);
+      }
+      if (record.type === "characterData" && record.target.parentElement) {
+        pendingScanRoots.add(record.target.parentElement);
+      }
+    });
+    if (pendingScanRoots.size === 0) return;
+    clearTimeout(scanTimer);
+    scanTimer = setTimeout(scanPendingNodes, 220);
+  }
+
+  function scheduleFullScan() {
+    pendingScanRoots.clear();
     clearTimeout(scanTimer);
     scanTimer = setTimeout(scanDocument, 220);
   }
@@ -117,10 +148,27 @@
   function scanDocument() {
     if (!fallbackActive || !settings || !document.body) return;
     pruneDisconnectedEntries(hiddenElements, (placeholder) => placeholder?.remove());
-    document.querySelectorAll(FEED_UNIT_SELECTOR).forEach(processFeedUnit);
-    processStories();
-    processRightRail();
-    processNotifications();
+    scanRoot(document);
+  }
+
+  function scanPendingNodes() {
+    if (!fallbackActive || !settings || !document.body) return;
+    const roots = [...pendingScanRoots];
+    pendingScanRoots.clear();
+    pruneDisconnectedEntries(hiddenElements, (placeholder) => placeholder?.remove());
+    roots.filter((root) => root.isConnected).forEach(scanRoot);
+  }
+
+  function scanRoot(root) {
+    selectWithin(root, FEED_UNIT_SELECTOR).forEach(processFeedUnit);
+    processStories(root);
+    processRightRail(root);
+    processNotifications(root);
+  }
+
+  function selectWithin(root, selector) {
+    const matches = root instanceof Element && root.matches(selector) ? [root] : [];
+    return matches.concat(Array.from(root.querySelectorAll?.(selector) || []));
   }
 
   function processFeedUnit(element) {
@@ -134,6 +182,11 @@
       return;
     }
 
+    const itemKey = getItemKey(element);
+    if (itemKey && revealedItemKeys.has(itemKey)) {
+      element.dataset.qfAllowed = "true";
+      return;
+    }
     const links = Array.from(element.querySelectorAll('a[href*="/reel/"]'));
     const category = classifyFeedUnit(
       {
@@ -148,36 +201,34 @@
     if (category) hideElement(element, category);
   }
 
-  function processStories() {
+  function processStories(root) {
     if (!settings.removeStories) return;
-    const selectors = [
-      '[aria-label="Stories"]',
-      '[aria-label="Tin"]',
-      '[data-pagelet*="Stories"]',
-    ];
-    document.querySelectorAll(selectors.join(",")).forEach((element) => {
+    selectWithin(root, STORIES_SELECTOR).forEach((element) => {
       const container = findStableContainer(element);
       hideElement(container, null);
     });
   }
 
-  function processRightRail() {
-    const rail = document.querySelector('[data-pagelet*="RightRail"], [role="complementary"]');
-    if (!rail) return;
-    const cards = rail.querySelectorAll('div[role="article"], div[aria-label]');
-    cards.forEach((card) => {
-      const text = card.innerText || card.textContent || "";
-      if (settings.removeBirthdays && includesPhrase(text, PHRASES.birthdays)) {
-        hideElement(findStableContainer(card), null);
-      }
+  function processRightRail(root) {
+    if (!settings.removeBirthdays) return;
+    const rails = new Set(selectWithin(root, RIGHT_RAIL_SELECTOR));
+    const ancestorRail = root instanceof Element ? root.closest(RIGHT_RAIL_SELECTOR) : null;
+    if (ancestorRail) rails.add(ancestorRail);
+    rails.forEach((rail) => {
+      rail.querySelectorAll('div[role="article"], div[aria-label]').forEach((card) => {
+        const text = card.innerText || card.textContent || "";
+        if (includesPhrase(text, PHRASES.birthdays)) {
+          hideElement(findStableContainer(card), null);
+        }
+      });
     });
   }
 
-  function processNotifications() {
+  function processNotifications(root) {
     if (!settings.removeNotifications) return;
-    document
-      .querySelectorAll('[role="status"], [data-pagelet*="Toast"], [data-visualcompletion="ignore-dynamic"] [role="alert"]')
-      .forEach((element) => hideElement(findStableContainer(element), null));
+    selectWithin(root, NOTIFICATION_SELECTOR).forEach((element) =>
+      hideElement(findStableContainer(element), null),
+    );
   }
 
   function findStableContainer(element) {
@@ -231,6 +282,7 @@
     showButton.className = "qf-show-button";
     showButton.textContent = "Show this item";
     showButton.addEventListener("click", () => {
+      rememberRevealedItem(getItemKey(element));
       element.dataset.qfAllowed = "true";
       element.classList.remove("qf-hidden");
       element.removeAttribute("data-qf-filtered");
@@ -239,6 +291,31 @@
     });
     placeholder.append(message, showButton);
     return placeholder;
+  }
+
+  function getItemKey(element) {
+    const link = element.querySelector(
+      'a[href*="/posts/"], a[href*="story_fbid="], a[href*="/reel/"], a[href*="/videos/"]',
+    );
+    if (link?.href) {
+      try {
+        const url = new URL(link.href, location.href);
+        const storyId = url.searchParams.get("story_fbid");
+        return storyId ? `story:${storyId}` : `${url.hostname}${url.pathname}`;
+      } catch {
+        // Fall through to a stable pagelet when Facebook provides one.
+      }
+    }
+    const pagelet = element.getAttribute("data-pagelet");
+    return /^FeedUnit_\d{5,}$/.test(pagelet || "") ? `pagelet:${pagelet}` : null;
+  }
+
+  function rememberRevealedItem(itemKey) {
+    if (!itemKey) return;
+    revealedItemKeys.add(itemKey);
+    if (revealedItemKeys.size > 500) {
+      revealedItemKeys.delete(revealedItemKeys.values().next().value);
+    }
   }
 
   function scheduleCountFlush() {

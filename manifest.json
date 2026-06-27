@@ -3,7 +3,7 @@
   "name": "Quiet Feed",
   "short_name": "Quiet Feed",
   "version": "2.1.0",
-  "description": "A readable, local feed cleaner for Facebook reels, sponsored posts, recommendations, and other distractions.",
+  "description": "A local feed cleaner for Facebook reels, sponsored posts, recommendations, and other distractions.",
   "minimum_chrome_version": "111",
   "incognito": "not_allowed",
   "permissions": [
