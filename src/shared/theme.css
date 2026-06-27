@@ -203,6 +203,45 @@ a:focus-visible {
   text-transform: uppercase;
 }
 
+.confirmation-dialog {
+  width: min(420px, calc(100vw - 32px));
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--surface-1);
+  color: var(--ink);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.65);
+}
+
+.confirmation-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(4px);
+}
+
+.confirmation-dialog__body {
+  padding: 22px;
+}
+
+.confirmation-dialog h2 {
+  margin: 0 0 10px;
+  font-size: 21px;
+  letter-spacing: -0.035em;
+}
+
+.confirmation-dialog p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+  white-space: pre-line;
+}
+
+.confirmation-dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 0 22px 22px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

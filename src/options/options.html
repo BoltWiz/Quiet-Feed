@@ -19,12 +19,19 @@
       <section class="hero">
         <span class="eyebrow">Settings</span>
         <h1>A quieter Facebook feed.</h1>
-        <p>Every setting is stored locally. Restarting Facebook after a change ensures it is fully applied.</p>
+        <p>Every setting is stored locally. Reloading Facebook after a change ensures it is fully applied.</p>
+        <div class="filter-health" id="filter-health" data-status="waiting">
+          <span class="filter-health__dot" aria-hidden="true"></span>
+          <span id="filter-health-label">Checking filter status…</span>
+        </div>
       </section>
 
-      <div class="restart-alert panel" id="restart-alert" role="status" hidden>
-        <span><strong>Setting changed.</strong> Optionally restart Facebook to ensure it is fully applied.</span>
-        <button class="button button--primary" id="restart-facebook" type="button">Restart Facebook</button>
+      <div class="reload-alert panel" id="reload-alert" role="status" hidden>
+        <span id="reload-copy"><strong>Setting changed.</strong></span>
+        <div class="reload-alert__actions">
+          <button class="button button--text" id="dismiss-reload" type="button">Not now</button>
+          <button class="button button--primary" id="reload-facebook" type="button">Reload Facebook</button>
+        </div>
       </div>
 
       <section class="panel section" aria-labelledby="stats-heading">
@@ -60,6 +67,16 @@
     </main>
 
     <div class="toast" id="toast" role="status" hidden></div>
+    <dialog class="confirmation-dialog" id="suggested-confirm">
+      <div class="confirmation-dialog__body">
+        <h2>Remove suggested content?</h2>
+        <p id="suggested-confirm-copy"></p>
+      </div>
+      <form class="confirmation-dialog__actions" method="dialog">
+        <button class="button" value="cancel" autofocus>Cancel</button>
+        <button class="button button--primary" value="confirm">Enable filter</button>
+      </form>
+    </dialog>
     <script src="../shared/features.js"></script>
     <script src="options.js"></script>
   </body>

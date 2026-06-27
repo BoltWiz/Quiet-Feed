@@ -15,7 +15,7 @@
       label: "Clean mode",
       description: "Hide filtered cards completely instead of leaving placeholders.",
       group: "behavior",
-      defaultValue: true,
+      defaultValue: false,
     },
     {
       key: "removeReels",
@@ -46,7 +46,7 @@
       confirmation:
         "Remove suggested content can hide a large amount of content from your News Feed.\n\nDo you want to continue?",
       group: "feed",
-      defaultValue: true,
+      defaultValue: false,
     },
     {
       key: "removeMarketplaceAds",
@@ -67,21 +67,21 @@
       label: "Remove stories",
       description: "Hide the stories tray at the top of the feed.",
       group: "distractions",
-      defaultValue: true,
+      defaultValue: false,
     },
     {
       key: "removeGroupSuggestions",
       label: "Remove group suggestions",
       description: "Hide groups Facebook recommends joining.",
       group: "distractions",
-      defaultValue: true,
+      defaultValue: false,
     },
     {
       key: "removePeopleSuggestions",
       label: "Remove people suggestions",
       description: "Hide People you may know cards.",
       group: "distractions",
-      defaultValue: true,
+      defaultValue: false,
     },
     {
       key: "removeBirthdays",

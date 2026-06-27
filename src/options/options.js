@@ -17,7 +17,10 @@
   document.querySelector("#reset-settings").addEventListener("click", resetSettings);
   document.querySelector("#export-settings").addEventListener("click", exportSettings);
   document.querySelector("#import-settings").addEventListener("change", importSettings);
-  document.querySelector("#restart-facebook").addEventListener("click", restartFacebook);
+  document.querySelector("#reload-facebook").addEventListener("click", reloadFacebook);
+  document.querySelector("#dismiss-reload").addEventListener("click", () => {
+    document.querySelector("#reload-alert").hidden = true;
+  });
 
   loadState().catch(showError);
 
@@ -36,6 +39,7 @@
     settings = mergeSettings(response.settings);
     renderStats(response.stats);
     renderFeatures();
+    refreshFilterHealth();
   }
 
   function renderStats(value) {
@@ -92,7 +96,7 @@
 
   async function updateFeature(key, value) {
     const feature = FEATURES.find((item) => item.key === key);
-    if (value && feature?.confirmation && !window.confirm(feature.confirmation)) {
+    if (!(await confirmFeatureChange(feature, value))) {
       renderFeatures();
       return;
     }
@@ -104,7 +108,7 @@
     }
     settings = mergeSettings(response.settings);
     renderFeatures();
-    showRestartPrompt();
+    await showReloadPrompt();
     showToast("Setting saved.");
   }
 
@@ -116,12 +120,12 @@
   }
 
   async function resetSettings() {
-    if (!confirmSuggestedRemoval(DEFAULT_SETTINGS)) return;
+    if (!(await confirmSuggestedRemoval(DEFAULT_SETTINGS))) return;
     const response = await chrome.runtime.sendMessage({ type: "QF_RESET_SETTINGS" });
     if (!response?.ok) return showError(new Error(response?.error || "Could not restore defaults"));
     settings = mergeSettings(response.settings || DEFAULT_SETTINGS);
     renderFeatures();
-    showRestartPrompt();
+    await showReloadPrompt();
     showToast("Default settings restored.");
   }
 
@@ -146,40 +150,102 @@
     const [file] = event.target.files;
     event.target.value = "";
     if (!file) return;
+    let payload;
     try {
-      const payload = JSON.parse(await file.text());
-      const importedSettings = mergeSettings(payload.settings);
-      const importedStats = mergeStats(payload.stats);
-      if (!confirmSuggestedRemoval(importedSettings)) return;
+      payload = JSON.parse(await file.text());
+    } catch {
+      showError(new Error("That file is not a valid Quiet Feed backup."));
+      return;
+    }
+    if (
+      !payload ||
+      typeof payload !== "object" ||
+      Array.isArray(payload) ||
+      payload.version !== 1 ||
+      !payload.settings ||
+      typeof payload.settings !== "object" ||
+      Array.isArray(payload.settings) ||
+      !payload.stats ||
+      typeof payload.stats !== "object" ||
+      Array.isArray(payload.stats)
+    ) {
+      showError(new Error("That file is not a valid Quiet Feed backup."));
+      return;
+    }
+
+    const importedSettings = mergeSettings(payload.settings);
+    const importedStats = mergeStats(payload.stats);
+    if (!(await confirmSuggestedRemoval(importedSettings))) return;
+    try {
       const response = await chrome.runtime.sendMessage({
         type: "QF_IMPORT_STATE",
         value: { settings: importedSettings, stats: importedStats },
       });
       if (!response?.ok) throw new Error(response?.error || "Could not import settings");
-      showRestartPrompt();
+      await showReloadPrompt();
       showToast("Settings imported.");
-    } catch {
-      showError(new Error("That file is not a valid Quiet Feed backup."));
+    } catch (error) {
+      showError(new Error(error?.message || "Could not import settings."));
     }
   }
 
   function confirmSuggestedRemoval(nextSettings) {
-    if (settings?.removeSuggested || !nextSettings.removeSuggested) return true;
+    if (settings?.removeSuggested || !nextSettings.removeSuggested) return Promise.resolve(true);
     const feature = FEATURES.find((item) => item.key === "removeSuggested");
-    return !feature?.confirmation || window.confirm(feature.confirmation);
+    return confirmFeatureChange(feature, true);
   }
 
-  function showRestartPrompt() {
-    document.querySelector("#restart-alert").hidden = false;
+  function confirmFeatureChange(feature, value) {
+    if (!value || !feature?.confirmation) return Promise.resolve(true);
+    const dialog = document.querySelector("#suggested-confirm");
+    document.querySelector("#suggested-confirm-copy").textContent = feature.confirmation;
+    dialog.returnValue = "cancel";
+    dialog.showModal();
+    return new Promise((resolve) => {
+      dialog.addEventListener("close", () => resolve(dialog.returnValue === "confirm"), {
+        once: true,
+      });
+    });
   }
 
-  async function restartFacebook() {
-    const response = await chrome.runtime.sendMessage({ type: "QF_RESTART_FACEBOOK" });
-    if (!response?.ok || !response.restarted) {
-      return showError(new Error(response?.reason || response?.error || "Could not restart Facebook"));
+  async function showReloadPrompt() {
+    const alert = document.querySelector("#reload-alert");
+    const button = document.querySelector("#reload-facebook");
+    alert.hidden = false;
+    const response = await chrome.runtime.sendMessage({ type: "QF_GET_FILTER_HEALTH" });
+    if (!response?.ok) return;
+    renderFilterHealth(response);
+    const count = response.tabCount;
+    document.querySelector("#reload-copy").textContent = count
+      ? `Setting changed. Optionally reload ${count} Facebook ${count === 1 ? "tab" : "tabs"} to ensure it is fully applied.`
+      : "Setting changed. Open Facebook to apply it.";
+    button.hidden = count === 0;
+    button.textContent = count === 1 ? "Reload Facebook tab" : `Reload ${count} Facebook tabs`;
+  }
+
+  async function reloadFacebook() {
+    const response = await chrome.runtime.sendMessage({ type: "QF_RELOAD_FACEBOOK_TABS" });
+    if (!response?.ok || !response.reloaded) {
+      return showError(new Error(response?.reason || response?.error || "Could not reload Facebook"));
     }
-    document.querySelector("#restart-alert").hidden = true;
-    showToast(`Restarted ${response.count} Facebook ${response.count === 1 ? "tab" : "tabs"}.`);
+    document.querySelector("#reload-alert").hidden = true;
+    showToast(`Reloaded ${response.count} Facebook ${response.count === 1 ? "tab" : "tabs"}.`);
+    setTimeout(refreshFilterHealth, 1200);
+  }
+
+  async function refreshFilterHealth() {
+    try {
+      const response = await chrome.runtime.sendMessage({ type: "QF_GET_FILTER_HEALTH" });
+      if (response?.ok) renderFilterHealth(response);
+    } catch {
+      renderFilterHealth({ status: "inactive", label: "Filter status unavailable" });
+    }
+  }
+
+  function renderFilterHealth(value) {
+    const health = document.querySelector("#filter-health");
+    health.dataset.status = value.status;
+    document.querySelector("#filter-health-label").textContent = value.label;
   }
 
   function showToast(message) {

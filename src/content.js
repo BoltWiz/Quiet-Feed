@@ -23,6 +23,13 @@
 
   injectStyle();
   window.addEventListener("message", receivePageMessage);
+  chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+    if (message?.type !== "QF_GET_FILTER_STATUS") return false;
+    sendResponse({
+      status: hookActive ? "advanced" : fallbackActive ? "fallback" : "waiting",
+    });
+    return false;
+  });
   initialize().catch((error) => console.error("Quiet Feed failed to start", error));
 
   async function initialize() {
@@ -119,6 +126,7 @@
   function processFeedUnit(element) {
     if (
       !(element instanceof HTMLElement) ||
+      element.dataset.qfAllowed === "true" ||
       element.closest("[data-qf-placeholder]") ||
       element.closest(".qf-hidden") ||
       element.querySelector(":scope .qf-hidden")
@@ -182,8 +190,14 @@
   }
 
   function hideElement(element, category) {
-    if (!(element instanceof HTMLElement) || hiddenElements.has(element)) return;
-    const placeholder = settings.cleanMode ? null : createPlaceholder(category);
+    if (
+      !(element instanceof HTMLElement) ||
+      element.dataset.qfAllowed === "true" ||
+      hiddenElements.has(element)
+    ) {
+      return;
+    }
+    const placeholder = settings.cleanMode ? null : createPlaceholder(category, element);
     hiddenElements.set(element, placeholder);
     if (placeholder) element.insertAdjacentElement("afterend", placeholder);
     element.classList.add("qf-hidden");
@@ -206,11 +220,24 @@
     hiddenElements.clear();
   }
 
-  function createPlaceholder(category) {
+  function createPlaceholder(category, element) {
     const placeholder = document.createElement("div");
     placeholder.className = "qf-placeholder";
     placeholder.setAttribute("data-qf-placeholder", "true");
-    placeholder.textContent = `Quiet Feed removed a ${category || "distracting"} item.`;
+    const message = document.createElement("span");
+    message.textContent = `Quiet Feed removed a ${category || "distracting"} item.`;
+    const showButton = document.createElement("button");
+    showButton.type = "button";
+    showButton.className = "qf-show-button";
+    showButton.textContent = "Show this item";
+    showButton.addEventListener("click", () => {
+      element.dataset.qfAllowed = "true";
+      element.classList.remove("qf-hidden");
+      element.removeAttribute("data-qf-filtered");
+      hiddenElements.delete(element);
+      placeholder.remove();
+    });
+    placeholder.append(message, showButton);
     return placeholder;
   }
 
@@ -239,7 +266,10 @@
     style.id = "quiet-feed-style";
     style.textContent = [
       ".qf-hidden{display:none!important}",
-      ".qf-placeholder{margin:10px 0;padding:12px 16px;border:1px solid rgba(255,255,255,.1);border-radius:12px;color:#999;background:#141414;font:13px/1.3 system-ui,sans-serif}",
+      ".qf-placeholder{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:10px 0;padding:12px 16px;border:1px solid rgba(255,255,255,.1);border-radius:12px;color:#999;background:#141414;font:13px/1.3 system-ui,sans-serif}",
+      ".qf-show-button{padding:7px 11px;border:1px solid rgba(255,255,255,.14);border-radius:999px;background:#292929;color:#fff;cursor:pointer;font:600 12px/1 system-ui,sans-serif;white-space:nowrap}",
+      ".qf-show-button:hover{background:#363636}",
+      ".qf-show-button:focus-visible{outline:2px solid #0099ff;outline-offset:2px}",
     ].join("");
     (document.head || document.documentElement).appendChild(style);
   }

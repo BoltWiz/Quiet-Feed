@@ -115,16 +115,46 @@ function compactNumber(value) {
   return String(value);
 }
 
-async function restartFacebookTabs() {
-  const tabs = await chrome.tabs.query({
+function getFacebookTabs() {
+  return chrome.tabs.query({
     url: ["https://www.facebook.com/*", "https://web.facebook.com/*"],
   });
+}
+
+async function reloadFacebookTabs() {
+  const tabs = await getFacebookTabs();
   const tabIds = tabs.map((tab) => tab.id).filter(Number.isInteger);
   if (tabIds.length === 0) {
-    return { restarted: false, reason: "Open Facebook in a tab first." };
+    return { reloaded: false, reason: "Open Facebook in a tab first." };
   }
   await Promise.all(tabIds.map((tabId) => chrome.tabs.reload(tabId)));
-  return { restarted: true, count: tabIds.length };
+  return { reloaded: true, count: tabIds.length };
+}
+
+async function getFilterHealth() {
+  const tabs = await getFacebookTabs();
+  if (tabs.length === 0) {
+    return { status: "inactive", label: "No Facebook tabs open", tabCount: 0 };
+  }
+
+  const reports = await Promise.all(
+    tabs.map(async (tab) => {
+      if (!Number.isInteger(tab.id)) return null;
+      try {
+        return await chrome.tabs.sendMessage(tab.id, { type: "QF_GET_FILTER_STATUS" });
+      } catch {
+        return null;
+      }
+    }),
+  );
+  const statuses = reports.map((report) => report?.status).filter(Boolean);
+  if (statuses.includes("fallback")) {
+    return { status: "fallback", label: "DOM fallback active", tabCount: tabs.length };
+  }
+  if (statuses.includes("advanced")) {
+    return { status: "advanced", label: "Advanced filters active", tabCount: tabs.length };
+  }
+  return { status: "waiting", label: "Filters starting…", tabCount: tabs.length };
 }
 
 chrome.runtime.onInstalled.addListener(() => {
@@ -166,8 +196,10 @@ async function handleMessage(message, sender) {
       return { ok: true, settings: await resetSettings() };
     case "QF_IMPORT_STATE":
       return { ok: true, ...(await importState(message.value)) };
-    case "QF_RESTART_FACEBOOK":
-      return { ok: true, ...(await restartFacebookTabs()) };
+    case "QF_GET_FILTER_HEALTH":
+      return { ok: true, ...(await getFilterHealth()) };
+    case "QF_RELOAD_FACEBOOK_TABS":
+      return { ok: true, ...(await reloadFacebookTabs()) };
     case "QF_OPEN_OPTIONS":
       await chrome.runtime.openOptionsPage();
       return { ok: true };

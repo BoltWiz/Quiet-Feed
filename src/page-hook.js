@@ -216,9 +216,12 @@
   }
 
   function RemovedContent({ originalContent, category, label }) {
+    const [revealed, setRevealed] = React.useState(false);
     React.useEffect(() => {
       incrementCounter(category);
     }, []);
+
+    if (revealed) return originalContent;
 
     return React.createElement(
       React.Fragment,
@@ -229,12 +232,34 @@
             "div",
             {
               style: {
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 12,
                 padding: "12px 16px",
                 color: "var(--secondary-text)",
                 fontSize: 13,
               },
             },
-            label,
+            React.createElement("span", null, label),
+            React.createElement(
+              "button",
+              {
+                type: "button",
+                onClick: () => setRevealed(true),
+                style: {
+                  marginLeft: 12,
+                  padding: "7px 11px",
+                  border: "1px solid var(--divider)",
+                  borderRadius: 999,
+                  background: "var(--secondary-button-background)",
+                  color: "var(--primary-text)",
+                  cursor: "pointer",
+                  fontWeight: 600,
+                },
+              },
+              "Show this item",
+            ),
           ),
       React.createElement(
         "div",

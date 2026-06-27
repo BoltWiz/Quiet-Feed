@@ -27,18 +27,42 @@
         </div>
       </section>
 
-      <section aria-label="Feed filters">
+      <div class="filter-health" id="filter-health" data-status="waiting">
+        <span class="filter-health__dot" aria-hidden="true"></span>
+        <span id="filter-health-label">Checking filter status…</span>
+      </div>
+
+      <div class="filter-tabs" role="tablist" aria-label="Setting categories">
+        <button class="filter-tab" id="tab-feed" type="button" role="tab" aria-selected="true" aria-controls="filter-panel" data-tab="feed">Feed content</button>
+        <button class="filter-tab" id="tab-distractions" type="button" role="tab" aria-selected="false" aria-controls="filter-panel" data-tab="distractions" tabindex="-1">Other distractions</button>
+      </div>
+
+      <section id="filter-panel" role="tabpanel" aria-labelledby="tab-feed">
         <div class="feature-list" id="feature-list"></div>
       </section>
 
-      <div class="restart-alert" id="restart-alert" role="status" hidden>
-        <span>Optional: Restart Facebook to ensure this setting is fully applied.</span>
-        <button class="button button--primary" id="restart-facebook" type="button">Restart</button>
+      <div class="reload-alert" id="reload-alert" role="status" hidden>
+        <span id="reload-copy">Setting saved.</span>
+        <div class="reload-alert__actions">
+          <button class="button button--text" id="dismiss-reload" type="button">Not now</button>
+          <button class="button button--primary" id="reload-facebook" type="button">Reload</button>
+        </div>
       </div>
       <div class="save-status" id="save-status" role="alert" hidden></div>
     </main>
 
     <footer class="footer">Local settings · no account required</footer>
+
+    <dialog class="confirmation-dialog" id="suggested-confirm">
+      <div class="confirmation-dialog__body">
+        <h2>Remove suggested content?</h2>
+        <p id="suggested-confirm-copy"></p>
+      </div>
+      <form class="confirmation-dialog__actions" method="dialog">
+        <button class="button" value="cancel" autofocus>Cancel</button>
+        <button class="button button--primary" value="confirm">Enable filter</button>
+      </form>
+    </dialog>
 
     <script src="../shared/features.js"></script>
     <script src="popup.js"></script>

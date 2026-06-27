@@ -37,6 +37,23 @@ const defaults = {
   removePeopleSuggestions: true,
 };
 
+test("default configuration enables only requested core filters", () => {
+  assert.deepEqual(shared.DEFAULT_SETTINGS, {
+    cleanMode: false,
+    removeReels: true,
+    allowFriendsReels: false,
+    removeSponsored: true,
+    removeSuggested: false,
+    removeMarketplaceAds: true,
+    removeSearchAds: true,
+    removeStories: false,
+    removeGroupSuggestions: false,
+    removePeopleSuggestions: false,
+    removeBirthdays: false,
+    removeNotifications: false,
+  });
+});
+
 test("normalizes Vietnamese accents", () => {
   assert.equal(rules.normalizeText("Được tài trợ"), "đuoc tai tro");
 });
@@ -205,19 +222,65 @@ test("hook polling is bounded and fallback waits for real activity", () => {
   assert.equal(content.includes('event.data.type === "QFP_HOOK_READY"'), true);
 });
 
-test("setting changes require confirmation and offer an optional restart", () => {
+test("setting changes use accessible confirmation and optional counted reload", () => {
   const popup = fs.readFileSync(path.join(root, "src", "popup", "popup.js"), "utf8");
   const popupHtml = fs.readFileSync(path.join(root, "src", "popup", "popup.html"), "utf8");
   const options = fs.readFileSync(path.join(root, "src", "options", "options.js"), "utf8");
   const suggested = shared.FEATURES.find((feature) => feature.key === "removeSuggested");
   assert.equal(suggested.confirmation.includes("large amount of content"), true);
-  assert.equal(popup.includes("window.confirm(feature.confirmation)"), true);
-  assert.equal(options.includes("window.confirm(feature.confirmation)"), true);
+  assert.equal(popup.includes("dialog.showModal()"), true);
+  assert.equal(options.includes("dialog.showModal()"), true);
+  assert.equal(popupHtml.includes('class="confirmation-dialog"'), true);
   assert.equal(options.includes("confirmSuggestedRemoval(importedSettings)"), true);
-  assert.equal(popup.includes('type: "QF_RESTART_FACEBOOK"'), true);
-  assert.equal(options.includes('type: "QF_RESTART_FACEBOOK"'), true);
-  assert.equal(popupHtml.includes("Optional: Restart Facebook"), true);
+  assert.equal(popup.includes('type: "QF_RELOAD_FACEBOOK_TABS"'), true);
+  assert.equal(options.includes('type: "QF_RELOAD_FACEBOOK_TABS"'), true);
+  assert.equal(popupHtml.includes("Not now"), true);
   assert.equal(options.includes('type: "QF_IMPORT_STATE"'), true);
+});
+
+test("filtered items support undo and clients expose filter health", () => {
+  const content = fs.readFileSync(path.join(root, "src", "content.js"), "utf8");
+  const pageHook = fs.readFileSync(path.join(root, "src", "page-hook.js"), "utf8");
+  const popup = fs.readFileSync(path.join(root, "src", "popup", "popup.js"), "utf8");
+  const options = fs.readFileSync(path.join(root, "src", "options", "options.js"), "utf8");
+  assert.equal(content.includes('showButton.textContent = "Show this item"'), true);
+  assert.equal(content.includes('element.dataset.qfAllowed = "true"'), true);
+  assert.equal(pageHook.includes('"Show this item"'), true);
+  assert.equal(popup.includes('type: "QF_GET_FILTER_HEALTH"'), true);
+  assert.equal(options.includes('type: "QF_GET_FILTER_HEALTH"'), true);
+});
+
+test("backup parsing errors stay distinct from import operation errors", () => {
+  const options = fs.readFileSync(path.join(root, "src", "options", "options.js"), "utf8");
+  assert.equal(options.includes("That file is not a valid Quiet Feed backup."), true);
+  assert.equal(options.includes("payload.version !== 1"), true);
+  assert.equal(options.includes('error?.message || "Could not import settings."'), true);
+});
+
+test("UI scripts reference existing HTML controls", () => {
+  for (const surface of ["popup", "options"]) {
+    const html = fs.readFileSync(path.join(root, "src", surface, `${surface}.html`), "utf8");
+    const script = fs.readFileSync(path.join(root, "src", surface, `${surface}.js`), "utf8");
+    const ids = new Set([...html.matchAll(/\bid="([^"]+)"/g)].map((match) => match[1]));
+    const references = [
+      ...script.matchAll(/querySelector\(["']#([^"']+)["']\)/g),
+    ].map((match) => match[1]);
+    for (const id of references) {
+      assert.equal(ids.has(id), true, `${surface}.js references missing #${id}`);
+    }
+  }
+});
+
+test("popup exposes every setting through accessible category tabs", () => {
+  const popup = fs.readFileSync(path.join(root, "src", "popup", "popup.js"), "utf8");
+  const html = fs.readFileSync(path.join(root, "src", "popup", "popup.html"), "utf8");
+  assert.equal(html.includes('role="tablist"'), true);
+  assert.equal(html.includes('data-tab="feed"'), true);
+  assert.equal(html.includes('data-tab="distractions"'), true);
+  assert.equal(popup.includes('["feed", "behavior"]'), true);
+  assert.equal(popup.includes('["distractions"]'), true);
+  assert.equal(popup.includes("feature.defaultValue"), false);
+  assert.equal(popup.includes('event.key === "ArrowRight"'), true);
 });
 
 test("manifest loads primary hooks in MAIN world and fallback in isolation", () => {

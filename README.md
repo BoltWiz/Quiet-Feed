@@ -37,3 +37,5 @@ The extension has no package dependencies and no build step.
 ## Filtering notes
 
 The React hook engine is primary. If Facebook changes its private modules and the hook cannot initialize, the extension automatically activates the DOM classifier in `src/filter-rules.js` and `src/content.js` after four seconds.
+
+Default filters remove reels, sponsored posts, Marketplace ads, and search ads. All other filters start off. Enabling suggested-content removal requires confirmation because it can hide a large part of the News Feed. Non-clean mode leaves a placeholder with a one-item undo action.
