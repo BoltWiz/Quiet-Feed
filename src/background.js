@@ -1,6 +1,6 @@
 "use strict";
 
-importScripts("shared/features.js");
+importScripts("src/shared/features.js");
 
 const {
   STORAGE_KEYS,

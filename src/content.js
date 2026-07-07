@@ -85,16 +85,18 @@
       hookActive = true;
       clearTimeout(fallbackTimer);
       stopDomFallback();
-      chrome.runtime.sendMessage({ type: "QF_SET_FILTER_STATUS", status: "advanced" }).catch(() => {});
+      try { chrome.runtime.sendMessage({ type: "QF_SET_FILTER_STATUS", status: "advanced" }).catch(() => {}); } catch (_) {}
       return;
     }
 
     if (event.data.type === "QFP_COUNTS") {
       const delta = sanitizeDelta(event.data.delta);
       if (Object.values(delta).some(Boolean)) {
-        chrome.runtime
-          .sendMessage({ type: "QF_INCREMENT_STATS", delta })
-          .catch((error) => console.debug("Quiet Feed counter bridge failed", error));
+        try {
+          chrome.runtime
+            .sendMessage({ type: "QF_INCREMENT_STATS", delta })
+            .catch((error) => console.debug("Quiet Feed counter bridge failed", error));
+        } catch (_) {}
       }
       const entries = sanitizeLogEntries(event.data.entries);
       if (entries.length > 0) appendFilterLogEntries(entries);
@@ -141,7 +143,7 @@
       pruneDisconnectedEntries(hiddenElements, (placeholder) => placeholder?.remove());
     }, 30000);
     showFallbackToast();
-    chrome.runtime.sendMessage({ type: "QF_SET_FILTER_STATUS", status: "fallback" }).catch(() => {});
+    try { chrome.runtime.sendMessage({ type: "QF_SET_FILTER_STATUS", status: "fallback" }).catch(() => {}); } catch (_) {}
     console.info("Quiet Feed: Facebook hooks unavailable; using DOM fallback filters.");
   }
 
