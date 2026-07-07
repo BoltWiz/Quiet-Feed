@@ -96,6 +96,8 @@
           .sendMessage({ type: "QF_INCREMENT_STATS", delta })
           .catch((error) => console.debug("Quiet Feed counter bridge failed", error));
       }
+      const entries = sanitizeLogEntries(event.data.entries);
+      if (entries.length > 0) appendFilterLogEntries(entries);
     }
   }
 
@@ -404,10 +406,22 @@
     }
   }
 
+  function sanitizeLogEntries(value) {
+    if (!Array.isArray(value)) return [];
+    const validCategories = new Set(["reels", "suggested", "sponsored", "custom"]);
+    return value.filter(
+      (e) => e && typeof e === "object" && validCategories.has(e.category) && typeof e.text === "string"
+    ).map((e) => ({ ts: Number(e.ts) || Date.now(), category: e.category, text: String(e.text).slice(0, 120) }));
+  }
+
   function appendFilterLog(category, text) {
+    appendFilterLogEntries([{ ts: Date.now(), category, text: text.trim().slice(0, 120) }]);
+  }
+
+  function appendFilterLogEntries(newEntries) {
     chrome.storage.local.get("quietFeedLog").then((stored) => {
       const log = Array.isArray(stored.quietFeedLog) ? stored.quietFeedLog : [];
-      log.push({ ts: Date.now(), category, text: text.trim().slice(0, 120) });
+      log.push(...newEntries);
       if (log.length > 100) log.splice(0, log.length - 100);
       return chrome.storage.local.set({ quietFeedLog: log });
     }).catch(() => {});

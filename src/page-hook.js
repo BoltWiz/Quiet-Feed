@@ -16,6 +16,7 @@
   const activeTargets = new Set();
   const revealedItemKeys = new Set();
   const pendingCounts = { reels: 0, suggested: 0, sponsored: 0 };
+  const pendingLogEntries = [];
 
   window.addEventListener("message", receiveExtensionMessage);
   waitForFacebookRuntime();
@@ -219,7 +220,7 @@
   function RemovedContent({ originalContent, category, label, itemKey }) {
     const [revealed, setRevealed] = React.useState(() => Boolean(itemKey && revealedItemKeys.has(itemKey)));
     React.useEffect(() => {
-      incrementCounter(category);
+      incrementCounter(category, label);
     }, []);
 
     if (revealed) return originalContent;
@@ -303,20 +304,25 @@
     (document.head || document.documentElement).appendChild(style);
   }
 
-  function incrementCounter(category) {
+  function incrementCounter(category, label) {
     if (!(category in pendingCounts)) return;
     pendingCounts[category] += 1;
+    if (label) {
+      pendingLogEntries.push({ ts: Date.now(), category, text: String(label).slice(0, 120) });
+      if (pendingLogEntries.length > 50) pendingLogEntries.splice(0, pendingLogEntries.length - 50);
+    }
     clearTimeout(counterTimer);
     counterTimer = setTimeout(flushCounters, COUNTER_FLUSH_DELAY);
   }
 
   function flushCounters() {
     const delta = { ...pendingCounts };
+    const entries = pendingLogEntries.splice(0);
     pendingCounts.reels = 0;
     pendingCounts.suggested = 0;
     pendingCounts.sponsored = 0;
     window.postMessage(
-      { source: "quiet-feed-page", type: "QFP_COUNTS", delta },
+      { source: "quiet-feed-page", type: "QFP_COUNTS", delta, entries },
       location.origin,
     );
   }
