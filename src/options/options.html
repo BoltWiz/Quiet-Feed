@@ -19,9 +19,9 @@
       <section class="hero">
         <div class="hero__copy">
         <span class="eyebrow">Settings</span>
-        <h1>A quieter<br>Facebook feed.</h1>
-        <p>Every setting stays on this device. Tune out the noise, keep what matters, and get back to your feed.</p>
-        <div class="filter-health" id="filter-health" data-status="waiting" role="status">
+        <h1>Your feed,<br>your rules.</h1>
+        <p>Every setting stays on this device. No accounts, no servers, no tracking. Just less noise.</p>
+        <div class="filter-health" id="filter-health" data-status="waiting" role="status" aria-live="polite">
           <span class="filter-health__dot" aria-hidden="true"></span>
           <span id="filter-health-label">Checking filter status…</span>
           <button class="filter-health__action" id="health-reload" type="button" hidden>Reload Facebook</button>
@@ -55,13 +55,13 @@
       </section>
 
       <section class="panel section" aria-labelledby="distractions-heading">
-        <div class="section__header"><div><span class="eyebrow">Filters</span><h2 id="distractions-heading">Other distractions</h2></div></div>
+        <div class="section__header"><div><span class="eyebrow">Filters</span><h2 id="distractions-heading">Distractions</h2></div></div>
         <div class="feature-list" id="distraction-features"></div>
       </section>
 
       <section class="panel section" aria-labelledby="custom-heading">
-        <div class="section__header"><div><span class="eyebrow">Advanced</span><h2 id="custom-heading">Custom keyword filters</h2></div></div>
-        <p class="section__description">Hide posts containing specific words or regex patterns. Matched against normalized post text.</p>
+        <div class="section__header"><div><span class="eyebrow">Advanced</span><h2 id="custom-heading">Custom filters</h2></div></div>
+        <p class="section__description">Hide posts containing specific words or regex patterns.</p>
         <div class="custom-rules" id="custom-rules-list"></div>
         <form class="custom-rules__form" id="add-rule-form">
           <input type="text" id="new-rule-input" placeholder="Keyword or /regex/" required>
