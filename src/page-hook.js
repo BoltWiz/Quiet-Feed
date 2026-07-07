@@ -231,40 +231,16 @@
         ? null
         : React.createElement(
             "div",
-            {
-              style: {
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: 12,
-                padding: "10px 14px",
-                borderRadius: 8,
-                background: "#242526",
-                color: "#b0b3b8",
-                fontSize: 14,
-                fontFamily: "'Segoe UI', system-ui, sans-serif",
-              },
-            },
+            { className: "qf-removed-placeholder" },
             React.createElement("span", null, label),
             React.createElement(
               "button",
               {
                 type: "button",
+                className: "qf-removed-btn",
                 onClick: () => {
                   rememberRevealedItem(itemKey);
                   setRevealed(true);
-                },
-                style: {
-                  marginLeft: 12,
-                  padding: "6px 12px",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                  borderRadius: 20,
-                  background: "#3a3b3c",
-                  color: "#e4e6eb",
-                  cursor: "pointer",
-                  fontWeight: 600,
-                  fontSize: 13,
-                  fontFamily: "'Segoe UI', system-ui, sans-serif",
                 },
               },
               "Show this item",
@@ -316,7 +292,14 @@
     if (document.querySelector("#quiet-feed-page-hook-style")) return;
     const style = document.createElement("style");
     style.id = "quiet-feed-page-hook-style";
-    style.textContent = ".qf-home-right-rail:has(.qf-hidden-side-ad){display:none!important}";
+    style.textContent = [
+      ".qf-home-right-rail:has(.qf-hidden-side-ad){display:none!important}",
+      ".qf-removed-placeholder{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;border-radius:8px;margin:8px 0;color:#65676b;background:#fff;border:1px solid rgba(0,0,0,0.08);font:14px/1.34 'Segoe UI',system-ui,sans-serif}",
+      "@media(prefers-color-scheme:dark){.qf-removed-placeholder{color:#b0b3b8;background:#242526;border-color:rgba(255,255,255,0.06)}}",
+      ".qf-removed-btn{padding:6px 12px;border:1px solid rgba(0,0,0,0.15);border-radius:20px;background:#f0f2f5;color:#050505;cursor:pointer;font:600 13px/1 'Segoe UI',system-ui,sans-serif;white-space:nowrap}",
+      ".qf-removed-btn:hover{background:#e4e6eb}",
+      "@media(prefers-color-scheme:dark){.qf-removed-btn{border-color:rgba(255,255,255,0.1);background:#3a3b3c;color:#e4e6eb}.qf-removed-btn:hover{background:#4e4f50}}",
+    ].join("");
     (document.head || document.documentElement).appendChild(style);
   }
 
