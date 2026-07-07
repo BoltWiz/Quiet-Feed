@@ -13,7 +13,10 @@ const {
   sanitizeFeatureChanges,
   isFacebookUrl,
   createSerialExecutor,
+  createLogger,
 } = QuietFeed;
+
+const log = createLogger("bg");
 
 const runStorageMutation = createSerialExecutor();
 
@@ -25,7 +28,11 @@ function ensureStorage() {
       STORAGE_KEYS.schema,
     ]);
 
-    const settings = mergeSettings(stored[STORAGE_KEYS.settings]);
+    const storedVersion = Number(stored[STORAGE_KEYS.schema]) || 0;
+    const rawSettings = stored[STORAGE_KEYS.settings];
+    const migratedSettings = migrateSettings(rawSettings, storedVersion);
+
+    const settings = mergeSettings(migratedSettings);
     const stats = mergeStats(stored[STORAGE_KEYS.stats]);
 
     await chrome.storage.local.set({
@@ -37,6 +44,16 @@ function ensureStorage() {
     await updateBadge(stats);
     return { settings, stats };
   });
+}
+
+function migrateSettings(raw, fromVersion) {
+  if (fromVersion >= SCHEMA_VERSION) return raw;
+  let settings = raw && typeof raw === "object" ? { ...raw } : {};
+  // v1 -> v2: no renamed keys; schema version bump only
+  if (fromVersion < 2) {
+    log.info(`Migrated settings schema v${fromVersion} -> 2`);
+  }
+  return settings;
 }
 
 async function getState() {
@@ -115,9 +132,10 @@ function importState(value) {
   });
 }
 
-async function updateBadge(stats) {
+async function updateBadge(stats, status) {
   const total = Object.values(stats).reduce((sum, value) => sum + value, 0);
-  await chrome.action.setBadgeBackgroundColor({ color: "#0099ff" });
+  const color = status === "advanced" ? "#42b72a" : status === "fallback" ? "#2374e1" : "#0099ff";
+  await chrome.action.setBadgeBackgroundColor({ color });
   await chrome.action.setBadgeText({ text: total > 0 ? compactNumber(total) : "" });
 }
 
@@ -171,11 +189,11 @@ async function getFilterHealth() {
 
 chrome.runtime.onInstalled.addListener(() => {
   chrome.storage.session.setAccessLevel({ accessLevel: "TRUSTED_AND_UNTRUSTED_CONTEXTS" }).catch(() => {});
-  ensureStorage().catch(console.error);
+  ensureStorage().catch(log.error);
 });
 
 chrome.runtime.onStartup.addListener(() => {
-  ensureStorage().catch(console.error);
+  ensureStorage().catch(log.error);
 });
 
 chrome.commands.onCommand.addListener((command) => {
@@ -196,7 +214,7 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   const task = handleMessage(message, sender);
   task.then(sendResponse).catch((error) => {
-    console.error("Quiet Feed message failed", error);
+    log.error("Quiet Feed message failed", error);
     sendResponse({ ok: false, error: error.message });
   });
   return true;
@@ -228,9 +246,14 @@ async function handleMessage(message, sender) {
     case "QF_OPEN_OPTIONS":
       await chrome.runtime.openOptionsPage();
       return { ok: true };
+    case "QF_SET_FILTER_STATUS": {
+      const { stats } = await getState();
+      await updateBadge(stats, message.status);
+      return { ok: true };
+    }
     default:
       throw new Error("Unknown Quiet Feed message");
   }
 }
 
-ensureStorage().catch(console.error);
+ensureStorage().catch(log.error);

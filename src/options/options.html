@@ -78,6 +78,15 @@
           <button class="button" id="reset-settings" type="button">Restore defaults</button>
         </div>
       </section>
+
+      <section class="panel section" aria-labelledby="log-heading">
+        <div class="section__header">
+          <div><span class="eyebrow">Activity</span><h2 id="log-heading">Filter log</h2></div>
+          <button class="button" id="clear-log" type="button">Clear log</button>
+        </div>
+        <p class="section__description">Last 100 items filtered during this session. Stored locally only.</p>
+        <div class="filter-log" id="filter-log" role="log" aria-live="polite" aria-label="Filter log"></div>
+      </section>
     </main>
 
     <div class="toast" id="toast" role="status" hidden></div>

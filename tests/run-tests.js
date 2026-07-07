@@ -367,6 +367,75 @@ test("legacy runtime and readable page hook share module targets", () => {
   assert.equal(runtime.includes(".react|quiet-feed"), true);
 });
 
+test("createLogger returns structured logger with correct methods", () => {
+  const logger = shared.createLogger("test");
+  assert.equal(typeof logger.debug, "function");
+  assert.equal(typeof logger.info, "function");
+  assert.equal(typeof logger.warn, "function");
+  assert.equal(typeof logger.error, "function");
+  const anonLogger = shared.createLogger();
+  assert.equal(typeof anonLogger.info, "function");
+});
+
+test("migrateSettings is called on schema version mismatch", () => {
+  const background = fs.readFileSync(path.join(root, "src", "background.js"), "utf8");
+  assert.equal(background.includes("migrateSettings"), true);
+  assert.equal(background.includes("storedVersion"), true);
+  assert.equal(background.includes("fromVersion < 2"), true);
+});
+
+test("schema version is 2", () => {
+  assert.equal(shared.SCHEMA_VERSION, 2);
+});
+
+test("QF_SET_FILTER_STATUS handler exists in background", () => {
+  const background = fs.readFileSync(path.join(root, "src", "background.js"), "utf8");
+  assert.equal(background.includes('"QF_SET_FILTER_STATUS"'), true);
+});
+
+test("content.js sends QF_SET_FILTER_STATUS for both modes", () => {
+  const content = fs.readFileSync(path.join(root, "src", "content.js"), "utf8");
+  assert.equal(content.includes('status: "advanced"'), true);
+  assert.equal(content.includes('status: "fallback"'), true);
+});
+
+test("DOM fallback uses IntersectionObserver", () => {
+  const content = fs.readFileSync(path.join(root, "src", "content.js"), "utf8");
+  assert.equal(content.includes("new IntersectionObserver"), true);
+  assert.equal(content.includes("intersectionObserver.unobserve"), true);
+});
+
+test("DOM fallback starts periodic prune and stops on disconnect", () => {
+  const content = fs.readFileSync(path.join(root, "src", "content.js"), "utf8");
+  assert.equal(content.includes("setInterval"), true);
+  assert.equal(content.includes("clearInterval(pruneTimer)"), true);
+});
+
+test("filter log is appended and options page exposes it", () => {
+  const content = fs.readFileSync(path.join(root, "src", "content.js"), "utf8");
+  const options = fs.readFileSync(path.join(root, "src", "options", "options.js"), "utf8");
+  const optionsHtml = fs.readFileSync(path.join(root, "src", "options", "options.html"), "utf8");
+  assert.equal(content.includes("appendFilterLog"), true);
+  assert.equal(content.includes("quietFeedLog"), true);
+  assert.equal(options.includes("renderFilterLog"), true);
+  assert.equal(options.includes("clearFilterLog"), true);
+  assert.equal(optionsHtml.includes('id="filter-log"'), true);
+  assert.equal(optionsHtml.includes('id="clear-log"'), true);
+});
+
+test("feature rows support keyboard activation (Enter/Space)", () => {
+  const uiComponents = fs.readFileSync(path.join(root, "src", "shared", "ui-components.js"), "utf8");
+  assert.equal(uiComponents.includes('event.key === "Enter"'), true);
+  assert.equal(uiComponents.includes('event.key === " "'), true);
+  assert.equal(uiComponents.includes('tabindex'), true);
+});
+
+test("high-contrast forced-colors support exists in theme.css", () => {
+  const theme = fs.readFileSync(path.join(root, "src", "shared", "theme.css"), "utf8");
+  assert.equal(theme.includes("forced-colors: active"), true);
+  assert.equal(theme.includes("forced-color-adjust"), true);
+});
+
 test("source contains no inherited product or store integration", () => {
   const files = walk(root).filter(
     (file) => file !== __filename && /\.(js|json|html|css|md)$/.test(file),

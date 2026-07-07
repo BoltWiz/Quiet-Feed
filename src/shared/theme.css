@@ -401,3 +401,35 @@ a:focus-visible {
     animation: none !important;
   }
 }
+
+@media (forced-colors: active) {
+  .switch__track {
+    forced-color-adjust: none;
+    background: ButtonFace;
+    border: 2px solid ButtonText;
+  }
+  .switch input:checked + .switch__track {
+    background: Highlight;
+    border-color: Highlight;
+  }
+  .switch__track::after {
+    background: ButtonText;
+  }
+  .switch input:checked + .switch__track::after {
+    background: HighlightText;
+  }
+  .filter-health__dot {
+    forced-color-adjust: none;
+    background: ButtonText;
+    border: 1px solid ButtonText;
+  }
+  .filter-health[data-status="advanced"] .filter-health__dot {
+    background: Highlight;
+  }
+  .button--primary {
+    forced-color-adjust: none;
+    background: Highlight;
+    color: HighlightText;
+    border: 1px solid Highlight;
+  }
+}

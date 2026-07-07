@@ -24,6 +24,8 @@
   let scanTimer = null;
   let countTimer = null;
   let fallbackTimer = null;
+  let pruneTimer = null;
+  let intersectionObserver = null;
   let observer = null;
   let hookActive = false;
   let fallbackActive = false;
@@ -50,6 +52,7 @@
     loadRevealedKeys();
     postSettingsToPage();
     fallbackTimer = setTimeout(startDomFallback, 4000);
+    setInterval(checkHookHealth, 60000);
 
     chrome.storage.onChanged.addListener((changes, areaName) => {
       if (areaName !== "local") return;
@@ -82,6 +85,7 @@
       hookActive = true;
       clearTimeout(fallbackTimer);
       stopDomFallback();
+      chrome.runtime.sendMessage({ type: "QF_SET_FILTER_STATUS", status: "advanced" }).catch(() => {});
       return;
     }
 
@@ -115,6 +119,13 @@
   function startDomFallback() {
     if (hookActive || fallbackActive) return;
     fallbackActive = true;
+    intersectionObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        intersectionObserver.unobserve(entry.target);
+        processFeedUnit(entry.target);
+      });
+    }, { rootMargin: "200px" });
     scanDocument();
     observer = new MutationObserver(handleMutations);
     observer.observe(document.documentElement, {
@@ -124,6 +135,11 @@
       attributeFilter: ["role", "aria-label", "data-pagelet"],
       characterData: true,
     });
+    pruneTimer = setInterval(() => {
+      pruneDisconnectedEntries(hiddenElements, (placeholder) => placeholder?.remove());
+    }, 30000);
+    showFallbackToast();
+    chrome.runtime.sendMessage({ type: "QF_SET_FILTER_STATUS", status: "fallback" }).catch(() => {});
     console.info("Quiet Feed: Facebook hooks unavailable; using DOM fallback filters.");
   }
 
@@ -132,7 +148,11 @@
     fallbackActive = false;
     observer?.disconnect();
     observer = null;
+    intersectionObserver?.disconnect();
+    intersectionObserver = null;
     clearTimeout(scanTimer);
+    clearInterval(pruneTimer);
+    pruneTimer = null;
     pendingScanRoots.clear();
     restoreAll();
   }
@@ -203,6 +223,14 @@
       element.dataset.qfAllowed = "true";
       return;
     }
+
+    const rect = element.getBoundingClientRect();
+    const offScreen = rect.bottom < -200 || rect.top > window.innerHeight + 200;
+    if (offScreen && intersectionObserver && !hiddenElements.has(element)) {
+      intersectionObserver.observe(element);
+      return;
+    }
+
     const links = Array.from(element.querySelectorAll('a[href*="/reel/"]'));
     const text = element.innerText || element.textContent || "";
     const category = classifyFeedUnit(
@@ -279,6 +307,7 @@
       countedElements.add(element);
       pendingCounts[category] += 1;
       scheduleCountFlush();
+      appendFilterLog(category, (element.innerText || element.textContent || "").slice(0, 120));
     }
   }
 
@@ -373,6 +402,45 @@
       for (const key of Object.keys(pendingCounts)) pendingCounts[key] += delta[key];
       scheduleCountFlush();
     }
+  }
+
+  function appendFilterLog(category, text) {
+    chrome.storage.local.get("quietFeedLog").then((stored) => {
+      const log = Array.isArray(stored.quietFeedLog) ? stored.quietFeedLog : [];
+      log.push({ ts: Date.now(), category, text: text.trim().slice(0, 120) });
+      if (log.length > 100) log.splice(0, log.length - 100);
+      return chrome.storage.local.set({ quietFeedLog: log });
+    }).catch(() => {});
+  }
+
+  function checkHookHealth() {
+    if (hookActive || !fallbackActive) return;
+    postSettingsToPage();
+  }
+
+  function showFallbackToast() {    const toast = document.createElement("div");
+    toast.id = "qf-fallback-toast";
+    toast.setAttribute("role", "status");
+    toast.setAttribute("aria-live", "polite");
+    toast.textContent = "Quiet Feed: using basic filters (advanced hooks unavailable).";
+    Object.assign(toast.style, {
+      position: "fixed",
+      bottom: "20px",
+      right: "20px",
+      zIndex: "999999",
+      padding: "10px 14px",
+      borderRadius: "8px",
+      background: "#1877f2",
+      color: "#fff",
+      font: "13px/1.4 'Segoe UI',system-ui,sans-serif",
+      boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
+      maxWidth: "320px",
+      opacity: "1",
+      transition: "opacity 600ms ease",
+    });
+    (document.body || document.documentElement).appendChild(toast);
+    setTimeout(() => { toast.style.opacity = "0"; }, 4000);
+    setTimeout(() => { toast.remove(); }, 4700);
   }
 
   function injectStyle() {

@@ -28,6 +28,7 @@
     document.querySelector("#reload-alert").hidden = true;
   });
   document.querySelector("#add-rule-form").addEventListener("submit", addCustomRule);
+  document.querySelector("#clear-log").addEventListener("click", clearFilterLog);
 
   loadState().catch(showError);
 
@@ -38,12 +39,15 @@
       settings = mergeSettings(changes[STORAGE_KEYS.settings].newValue);
       renderFeatures();
     }
+    if (changes.quietFeedLog) {
+      renderFilterLog(Array.isArray(changes.quietFeedLog.newValue) ? changes.quietFeedLog.newValue : []);
+    }
   });
 
   async function loadState() {
     const [response, stored] = await Promise.all([
       chrome.runtime.sendMessage({ type: "QF_GET_STATE" }),
-      chrome.storage.local.get("quietFeedCustomRules"),
+      chrome.storage.local.get(["quietFeedCustomRules", "quietFeedLog"]),
     ]);
     if (!response?.ok) throw new Error(response?.error || "Could not load settings");
     settings = mergeSettings(response.settings);
@@ -51,6 +55,7 @@
     renderStats(response.stats);
     renderFeatures();
     renderCustomRules();
+    renderFilterLog(Array.isArray(stored.quietFeedLog) ? stored.quietFeedLog : []);
     refreshFilterHealth();
   }
 
@@ -311,5 +316,38 @@
 
   function saveCustomRules() {
     chrome.storage.local.set({ quietFeedCustomRules: customRules }).catch(showError);
+  }
+
+  function renderFilterLog(entries) {
+    const list = document.querySelector("#filter-log");
+    if (!entries || entries.length === 0) {
+      list.innerHTML = '<p class="empty-state">No items filtered yet.</p>';
+      return;
+    }
+    const fragment = document.createDocumentFragment();
+    for (let i = entries.length - 1; i >= 0; i--) {
+      const entry = entries[i];
+      const row = document.createElement("div");
+      row.className = "filter-log-row";
+      const time = document.createElement("time");
+      time.className = "filter-log-time";
+      time.dateTime = new Date(entry.ts).toISOString();
+      time.textContent = new Date(entry.ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      const badge = document.createElement("span");
+      badge.className = `filter-log-badge filter-log-badge--${entry.category}`;
+      badge.textContent = entry.category;
+      const text = document.createElement("span");
+      text.className = "filter-log-text";
+      text.textContent = entry.text || "(no text)";
+      row.append(time, badge, text);
+      fragment.appendChild(row);
+    }
+    list.replaceChildren(fragment);
+  }
+
+  function clearFilterLog() {
+    chrome.storage.local.remove("quietFeedLog").catch(showError);
+    renderFilterLog([]);
+    showToast("Filter log cleared.");
   }
 })();

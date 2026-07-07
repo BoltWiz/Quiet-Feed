@@ -21,6 +21,15 @@
     row.className = "feature-row";
     row.setAttribute("aria-disabled", String(Boolean(disabled)));
     row.setAttribute("aria-busy", String(pending));
+    if (!disabled) {
+      row.setAttribute("tabindex", "0");
+      row.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          if (!disabled) input.click();
+        }
+      });
+    }
 
     const copy = document.createElement("div");
     copy.className = "feature-copy";

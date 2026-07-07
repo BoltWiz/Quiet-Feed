@@ -297,6 +297,58 @@ body {
   padding: 4px 0;
 }
 
+/* --- Filter log --- */
+
+.filter-log {
+  max-height: 320px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.filter-log-row {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  align-items: baseline;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line-soft);
+  font-size: 13px;
+}
+
+.filter-log-row:last-child {
+  border-bottom: none;
+}
+
+.filter-log-time {
+  color: var(--muted);
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.filter-log-badge {
+  padding: 2px 7px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  background: var(--surface-2);
+  color: var(--text-secondary);
+}
+
+.filter-log-badge--sponsored { background: rgba(231, 76, 60, 0.15); color: #e74c3c; }
+.filter-log-badge--suggested { background: rgba(247, 185, 40, 0.15); color: var(--warning); }
+.filter-log-badge--reels     { background: rgba(35, 116, 225, 0.15); color: var(--accent); }
+.filter-log-badge--custom    { background: rgba(66, 183, 42, 0.15);  color: var(--success); }
+
+.filter-log-text {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--text-secondary);
+}
+
 /* --- Toast --- */
 
 .toast {
