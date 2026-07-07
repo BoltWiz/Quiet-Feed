@@ -2,7 +2,7 @@
   "use strict";
 
   const { STORAGE_KEYS, mergeSettings, pruneDisconnectedEntries } = QuietFeed;
-  const { PHRASES, includesPhrase, classifyFeedUnit } = QuietFeedRules;
+  const { PHRASES, includesPhrase, classifyFeedUnit, matchesCustomRules } = QuietFeedRules;
 
   const FEED_UNIT_SELECTOR = [
     'div[role="article"]',
@@ -20,12 +20,15 @@
   const pendingScanRoots = new Set();
   const pendingCounts = { reels: 0, suggested: 0, sponsored: 0 };
   let settings = null;
+  let customRules = [];
   let scanTimer = null;
   let countTimer = null;
   let fallbackTimer = null;
   let observer = null;
   let hookActive = false;
   let fallbackActive = false;
+  let debugMode = false;
+  let pausedUntil = 0;
 
   injectStyle();
   window.addEventListener("message", receivePageMessage);
@@ -39,16 +42,28 @@
   initialize().catch((error) => console.error("Quiet Feed failed to start", error));
 
   async function initialize() {
-    const stored = await chrome.storage.local.get(STORAGE_KEYS.settings);
+    const stored = await chrome.storage.local.get([STORAGE_KEYS.settings, "quietFeedDebug", "quietFeedCustomRules", "quietFeedPausedUntil"]);
     settings = mergeSettings(stored[STORAGE_KEYS.settings]);
+    debugMode = stored.quietFeedDebug === true;
+    customRules = Array.isArray(stored.quietFeedCustomRules) ? stored.quietFeedCustomRules : [];
+    pausedUntil = Number(stored.quietFeedPausedUntil) || 0;
+    loadRevealedKeys();
     postSettingsToPage();
     fallbackTimer = setTimeout(startDomFallback, 4000);
 
     chrome.storage.onChanged.addListener((changes, areaName) => {
-      if (areaName !== "local" || !changes[STORAGE_KEYS.settings]) return;
-      settings = mergeSettings(changes[STORAGE_KEYS.settings].newValue);
-      postSettingsToPage();
-      if (fallbackActive) {
+      if (areaName !== "local") return;
+      if (changes[STORAGE_KEYS.settings]) {
+        settings = mergeSettings(changes[STORAGE_KEYS.settings].newValue);
+        postSettingsToPage();
+      }
+      if (changes.quietFeedCustomRules) {
+        customRules = Array.isArray(changes.quietFeedCustomRules.newValue) ? changes.quietFeedCustomRules.newValue : [];
+      }
+      if (changes.quietFeedPausedUntil) {
+        pausedUntil = Number(changes.quietFeedPausedUntil.newValue) || 0;
+      }
+      if ((changes[STORAGE_KEYS.settings] || changes.quietFeedCustomRules || changes.quietFeedPausedUntil) && fallbackActive) {
         restoreAll();
         scheduleFullScan();
       }
@@ -160,6 +175,7 @@
   }
 
   function scanRoot(root) {
+    if (pausedUntil && Date.now() < pausedUntil) return;
     selectWithin(root, FEED_UNIT_SELECTOR).forEach(processFeedUnit);
     processStories(root);
     processRightRail(root);
@@ -188,9 +204,10 @@
       return;
     }
     const links = Array.from(element.querySelectorAll('a[href*="/reel/"]'));
+    const text = element.innerText || element.textContent || "";
     const category = classifyFeedUnit(
       {
-        text: element.innerText || element.textContent || "",
+        text,
         pathname: location.pathname,
         hasReelLink: links.length > 0,
         reelLinkCount: links.length,
@@ -198,7 +215,8 @@
       settings,
     );
 
-    if (category) hideElement(element, category);
+    if (category) { hideElement(element, category); return; }
+    if (matchesCustomRules(text, customRules)) { hideElement(element, "custom"); }
   }
 
   function processStories(root) {
@@ -253,6 +271,9 @@
     if (placeholder) element.insertAdjacentElement("afterend", placeholder);
     element.classList.add("qf-hidden");
     element.setAttribute("data-qf-filtered", category || "other");
+    if (debugMode) {
+      console.debug("[QuietFeed]", category || "other", element.innerText?.slice(0, 80), element);
+    }
 
     if (category && !countedElements.has(element)) {
       countedElements.add(element);
@@ -316,6 +337,22 @@
     if (revealedItemKeys.size > 500) {
       revealedItemKeys.delete(revealedItemKeys.values().next().value);
     }
+    persistRevealedKeys();
+  }
+
+  function persistRevealedKeys() {
+    chrome.storage.session
+      .set({ quietFeedRevealed: [...revealedItemKeys] })
+      .catch(() => {});
+  }
+
+  function loadRevealedKeys() {
+    chrome.storage.session.get("quietFeedRevealed").then((stored) => {
+      const keys = stored?.quietFeedRevealed;
+      if (Array.isArray(keys)) {
+        keys.slice(-500).forEach((k) => revealedItemKeys.add(k));
+      }
+    }).catch(() => {});
   }
 
   function scheduleCountFlush() {

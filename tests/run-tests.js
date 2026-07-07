@@ -128,6 +128,15 @@ test("keeps ordinary posts", () => {
   );
 });
 
+test("custom rules match keywords and regex patterns", () => {
+  assert.equal(rules.matchesCustomRules("Buy this product now!", [{ type: "keyword", pattern: "buy this" }]), true);
+  assert.equal(rules.matchesCustomRules("Nothing here", [{ type: "keyword", pattern: "buy this" }]), false);
+  assert.equal(rules.matchesCustomRules("Order #12345 shipped", [{ type: "regex", pattern: "order.*\\d+" }]), true);
+  assert.equal(rules.matchesCustomRules("Normal post", [{ type: "regex", pattern: "order.*\\d+" }]), false);
+  assert.equal(rules.matchesCustomRules("anything", []), false);
+  assert.equal(rules.matchesCustomRules("anything", null), false);
+});
+
 test("manifest references existing local resources", () => {
   const manifest = JSON.parse(fs.readFileSync(path.join(root, "manifest.json"), "utf8"));
   const resources = [
@@ -286,6 +295,7 @@ test("UI scripts reference existing HTML controls", () => {
 test("popup exposes every setting through accessible category tabs", () => {
   const popup = fs.readFileSync(path.join(root, "src", "popup", "popup.js"), "utf8");
   const html = fs.readFileSync(path.join(root, "src", "popup", "popup.html"), "utf8");
+  const uiComponents = fs.readFileSync(path.join(root, "src", "shared", "ui-components.js"), "utf8");
   assert.equal(html.includes('role="tablist"'), true);
   assert.equal(html.includes('data-tab="feed"'), true);
   assert.equal(html.includes('data-tab="distractions"'), true);
@@ -297,7 +307,7 @@ test("popup exposes every setting through accessible category tabs", () => {
   assert.equal(popup.includes("unknown quiet feed message"), true);
   assert.equal(popup.includes("STORAGE_KEYS.popupTab"), true);
   assert.equal(popup.includes("pendingKeys.add(key)"), true);
-  assert.equal(popup.includes('event.target.closest("label, input, button")'), true);
+  assert.equal(uiComponents.includes('event.target.closest("label, input, button")'), true);
 });
 
 test("DOM fallback scans added subtrees instead of rescanning the document", () => {

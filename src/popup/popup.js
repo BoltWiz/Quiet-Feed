@@ -2,6 +2,7 @@
   "use strict";
 
   const { FEATURES, STORAGE_KEYS, mergeSettings, mergeStats } = QuietFeed;
+  const { createFeatureRow } = QuietFeedUI;
   const featureList = document.querySelector("#feature-list");
   const reloadAlert = document.querySelector("#reload-alert");
   const reloadButton = document.querySelector("#reload-facebook");
@@ -25,6 +26,7 @@
   document.querySelectorAll("[data-category-action]").forEach((button) => {
     button.addEventListener("click", () => applyCategoryAction(button.dataset.categoryAction));
   });
+  document.querySelector("#pause-filters").addEventListener("click", pauseFilters);
 
   loadState().catch(showError);
 
@@ -64,7 +66,7 @@
     const groups = activeTab === "feed" ? ["feed", "behavior"] : ["distractions"];
     const features = FEATURES.filter((feature) => groups.includes(feature.group));
     featureList.replaceChildren(
-      ...features.map(createFeatureRow),
+      ...features.map(buildFeatureRow),
     );
     const categoryPending = features.some((feature) => pendingKeys.has(feature.key));
     document.querySelectorAll("[data-category-action]").forEach((button) => {
@@ -101,57 +103,13 @@
     nextButton.focus();
   }
 
-  function createFeatureRow(feature) {
-    const dependencyDisabled = feature.dependsOn && !settings[feature.dependsOn];
-    const pending = pendingKeys.has(feature.key);
-    const disabled = dependencyDisabled || pending;
-    const row = document.createElement("div");
-    row.className = "feature-row";
-    row.setAttribute("aria-disabled", String(Boolean(disabled)));
-    row.setAttribute("aria-busy", String(pending));
-
-    const copy = document.createElement("div");
-    copy.className = "feature-copy";
-    const heading = document.createElement("div");
-    heading.className = "feature-heading";
-    const label = document.createElement("label");
-    label.className = "feature-label";
-    label.htmlFor = `feature-${feature.key}`;
-    label.textContent = feature.label;
-    const info = document.createElement("button");
-    info.type = "button";
-    info.className = "feature-info";
-    info.setAttribute("aria-label", `About ${feature.label}`);
-    const tooltip = document.createElement("span");
-    tooltip.className = "feature-tooltip";
-    tooltip.id = `tooltip-${feature.key}`;
-    tooltip.setAttribute("role", "tooltip");
-    tooltip.textContent = feature.description;
-    info.setAttribute("aria-describedby", tooltip.id);
-    info.append("i", tooltip);
-    heading.append(label, info);
-    copy.append(heading);
-
-    const switchLabel = document.createElement("label");
-    switchLabel.className = "switch";
-    switchLabel.title = feature.description;
-    const input = document.createElement("input");
-    input.id = `feature-${feature.key}`;
-    input.type = "checkbox";
-    input.checked = settings[feature.key];
-    input.disabled = Boolean(disabled);
-    input.setAttribute("aria-label", feature.label);
-    input.addEventListener("change", () => updateFeature(feature.key, input.checked));
-    const track = document.createElement("span");
-    track.className = "switch__track";
-    track.setAttribute("aria-hidden", "true");
-    switchLabel.append(input, track);
-    row.append(copy, switchLabel);
-    row.addEventListener("click", (event) => {
-      if (disabled || event.target.closest("label, input, button")) return;
-      input.click();
+  function buildFeatureRow(feature) {
+    return createFeatureRow(feature, {
+      settings,
+      pendingKeys,
+      onChange: updateFeature,
+      variant: "compact",
     });
-    return row;
   }
 
   async function updateFeature(key, value) {
@@ -297,5 +255,14 @@
   function showError(error) {
     saveStatus.hidden = false;
     saveStatus.textContent = error.message;
+  }
+
+  async function pauseFilters() {
+    const pausedUntil = Date.now() + 5 * 60 * 1000;
+    await chrome.storage.local.set({ quietFeedPausedUntil: pausedUntil });
+    const btn = document.querySelector("#pause-filters");
+    btn.textContent = "Paused";
+    btn.disabled = true;
+    setTimeout(() => { btn.textContent = "Pause 5 min"; btn.disabled = false; }, 5000);
   }
 })();

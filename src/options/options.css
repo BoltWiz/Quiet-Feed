@@ -215,6 +215,62 @@ body {
   opacity: 0;
 }
 
+.section__description {
+  margin: -4px 0 12px;
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+.custom-rules__form {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.custom-rules__form input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--text-1);
+  font: inherit;
+  font-size: 13px;
+}
+
+.custom-rules__form input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+
+.custom-rule-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.custom-rule-row:last-child {
+  border-bottom: none;
+}
+
+.custom-rule-label {
+  font: 13px/1.3 monospace;
+  color: var(--text-1);
+  word-break: break-all;
+}
+
+.custom-rule-remove {
+  flex-shrink: 0;
+}
+
+.empty-state {
+  color: var(--text-2);
+  font-size: 13px;
+}
+
 .toast {
   position: fixed;
   right: 24px;

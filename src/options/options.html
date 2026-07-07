@@ -59,6 +59,16 @@
         <div class="feature-list" id="distraction-features"></div>
       </section>
 
+      <section class="panel section" aria-labelledby="custom-heading">
+        <div class="section__header"><div><span class="eyebrow">Advanced</span><h2 id="custom-heading">Custom keyword filters</h2></div></div>
+        <p class="section__description">Hide posts containing specific words or regex patterns. Matched against normalized post text.</p>
+        <div class="custom-rules" id="custom-rules-list"></div>
+        <form class="custom-rules__form" id="add-rule-form">
+          <input type="text" id="new-rule-input" placeholder="Keyword or /regex/" required>
+          <button class="button button--primary" type="submit">Add rule</button>
+        </form>
+      </section>
+
       <section class="panel section" aria-labelledby="data-heading">
         <div class="section__header"><div><span class="eyebrow">Local data</span><h2 id="data-heading">Backup and reset</h2></div></div>
         <div class="actions">
@@ -81,6 +91,7 @@
       </form>
     </dialog>
     <script src="../shared/features.js"></script>
+    <script src="../shared/ui-components.js"></script>
     <script src="options.js"></script>
   </body>
 </html>

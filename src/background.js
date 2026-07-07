@@ -170,11 +170,22 @@ async function getFilterHealth() {
 }
 
 chrome.runtime.onInstalled.addListener(() => {
+  chrome.storage.session.setAccessLevel({ accessLevel: "TRUSTED_AND_UNTRUSTED_CONTEXTS" }).catch(() => {});
   ensureStorage().catch(console.error);
 });
 
 chrome.runtime.onStartup.addListener(() => {
   ensureStorage().catch(console.error);
+});
+
+chrome.commands.onCommand.addListener((command) => {
+  if (command === "toggle-clean-mode") {
+    runStorageMutation(async () => {
+      const { settings } = await getState();
+      settings.cleanMode = !settings.cleanMode;
+      await chrome.storage.local.set({ [STORAGE_KEYS.settings]: settings });
+    }).catch(console.error);
+  }
 });
 
 chrome.storage.onChanged.addListener((changes, areaName) => {
