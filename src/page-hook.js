@@ -186,6 +186,10 @@
       return removed(payload.lastCmp, "suggested", "Removed suggested content", feedUnitId);
     }
 
+    if (enabled("removeGroupSuggestions") && canSubscribe) {
+      return removed(payload.lastCmp, "suggested", "Removed suggested content", feedUnitId);
+    }
+
     const storyId =
       get(payload.payload, "feedUnit.__id") ||
       get(payload.payload, "children[0].props.children.props.feedUnit.__id");
