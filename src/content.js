@@ -308,8 +308,10 @@
 
     if (category && !countedElements.has(element)) {
       countedElements.add(element);
-      pendingCounts[category] += 1;
-      scheduleCountFlush();
+      if (category in pendingCounts) {
+        pendingCounts[category] += 1;
+        scheduleCountFlush();
+      }
       appendFilterLog(category, (element.innerText || element.textContent || "").slice(0, 120));
     }
   }
