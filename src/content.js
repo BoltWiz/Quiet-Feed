@@ -254,8 +254,7 @@
   function processStories(root) {
     if (!settings.removeStories) return;
     selectWithin(root, STORIES_SELECTOR).forEach((element) => {
-      const container = findStableContainer(element);
-      hideElement(container, null);
+      hideElement(element, null);
     });
   }
 

@@ -160,29 +160,30 @@
     const feedUnitId =
       get(payload.payload, "feedUnit.id") || get(payload.payload, "feedUnit.__id");
     const unitType = get(payload.payload, "unitTypename", "none");
-    const canSubscribe = Boolean(
-      feedUnitId && relayField(feedUnitId, "^^actors[0].subscribe_status") === "CAN_SUBSCRIBE",
-    );
-    const canJoin = Boolean(
-      feedUnitId && relayField(feedUnitId, "^to.viewer_forum_join_state") === "CAN_JOIN",
-    );
     const isSponsored = Boolean(
       feedUnitId && relayField(feedUnitId, "^sponsored_data.ad_id"),
     );
 
+    if (enabled("removeSponsored") && isSponsored) {
+      return removed(payload.lastCmp, "sponsored", "Removed sponsored post", feedUnitId);
+    }
+
+    const canJoin = Boolean(
+      feedUnitId && relayField(feedUnitId, "^to.viewer_forum_join_state") === "CAN_JOIN",
+    );
+    const canSubscribe = Boolean(
+      feedUnitId && relayField(feedUnitId, "^^actors[0].subscribe_status") === "CAN_SUBSCRIBE",
+    );
+
     if (
       enabled("removeGroupSuggestions") &&
-      (GROUP_SUGGESTION_TYPES.has(unitType) || canSubscribe || canJoin)
+      (GROUP_SUGGESTION_TYPES.has(unitType) || canJoin)
     ) {
       return removed(payload.lastCmp, "suggested", "Removed group suggestion", feedUnitId);
     }
 
     if (enabled("removeSuggested") && (canSubscribe || canJoin)) {
       return removed(payload.lastCmp, "suggested", "Removed suggested content", feedUnitId);
-    }
-
-    if (enabled("removeSponsored") && isSponsored) {
-      return removed(payload.lastCmp, "sponsored", "Removed sponsored post", feedUnitId);
     }
 
     const storyId =
