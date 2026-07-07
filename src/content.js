@@ -380,10 +380,10 @@
     style.id = "quiet-feed-style";
     style.textContent = [
       ".qf-hidden{display:none!important}",
-      ".qf-placeholder{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:10px 0;padding:12px 16px;border:1px solid rgba(255,255,255,.06);border-radius:10px;color:#7a8fa6;background:#111820;font:13px/1.4 'IBM Plex Sans',system-ui,sans-serif}",
-      ".qf-show-button{padding:7px 12px;border:1px solid rgba(255,255,255,.08);border-radius:8px;background:#1a2230;color:#eaf0f6;cursor:pointer;font:500 12px/1 'IBM Plex Sans',system-ui,sans-serif;white-space:nowrap;transition:background 140ms ease}",
-      ".qf-show-button:hover{background:#222d3d}",
-      ".qf-show-button:focus-visible{outline:2px solid #2dd4a8;outline-offset:2px}",
+      ".qf-placeholder{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:8px 0;padding:10px 14px;border-radius:8px;color:#b0b3b8;background:#242526;font:14px/1.34 'Segoe UI',system-ui,sans-serif}",
+      ".qf-show-button{padding:6px 12px;border:1px solid rgba(255,255,255,0.1);border-radius:20px;background:#3a3b3c;color:#e4e6eb;cursor:pointer;font:600 13px/1 'Segoe UI',system-ui,sans-serif;white-space:nowrap;transition:background 100ms ease}",
+      ".qf-show-button:hover{background:#4e4f50}",
+      ".qf-show-button:focus-visible{outline:2px solid #2374e1;outline-offset:2px}",
     ].join("");
     (document.head || document.documentElement).appendChild(style);
   }

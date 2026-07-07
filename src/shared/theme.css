@@ -1,43 +1,34 @@
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
-
 :root {
   color-scheme: dark;
 
-  /* Canvas & surfaces */
-  --canvas: #0a0e14;
-  --surface-1: #111820;
-  --surface-2: #1a2230;
-  --surface-hover: #1e2838;
-  --surface-raised: #222d3d;
+  --canvas: #18191a;
+  --surface-1: #242526;
+  --surface-2: #3a3b3c;
+  --surface-hover: #3a3b3c;
+  --surface-raised: #4e4f50;
 
-  /* Text */
-  --ink: #eaf0f6;
-  --text-secondary: #7a8fa6;
-  --muted: #546578;
+  --ink: #e4e6eb;
+  --text-secondary: #b0b3b8;
+  --muted: #6d7175;
 
-  /* Accent: teal-green signal color */
-  --accent: #2dd4a8;
-  --accent-dim: rgba(45, 212, 168, 0.12);
-  --accent-glow: rgba(45, 212, 168, 0.25);
+  --accent: #2374e1;
+  --accent-hover: #1a6dd1;
+  --accent-dim: rgba(35, 116, 225, 0.15);
 
-  /* Status */
-  --success: #2dd4a8;
-  --warning: #e8a838;
-  --error: #e85454;
+  --success: #42b72a;
+  --warning: #f7b928;
+  --error: #e74c3c;
+  --blue: #2374e1;
 
-  /* Structure */
-  --line: rgba(255, 255, 255, 0.08);
-  --line-soft: rgba(255, 255, 255, 0.04);
-  --blue: #4da6e8;
+  --line: rgba(255, 255, 255, 0.1);
+  --line-soft: rgba(255, 255, 255, 0.06);
 
-  /* Radii */
-  --radius-card: 12px;
-  --radius-pill: 8px;
+  --radius-card: 8px;
+  --radius-pill: 20px;
   --radius-sm: 6px;
 
-  /* Type */
-  font-family: "IBM Plex Sans", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  line-height: 1.4;
+  font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  line-height: 1.34;
 }
 
 *,
@@ -54,10 +45,8 @@ body {
 }
 
 body {
-  font-size: 14px;
-  letter-spacing: -0.01em;
+  font-size: 15px;
   -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
 }
 
 button,
@@ -86,15 +75,14 @@ a:focus-visible {
   display: inline-flex;
   align-items: center;
   min-height: 36px;
-  padding: 0 14px;
+  padding: 0 16px;
   border-radius: var(--radius-pill);
   background: var(--surface-2);
   color: var(--ink);
   cursor: pointer;
-  font-size: 13px;
-  font-weight: 500;
-  letter-spacing: -0.01em;
-  transition: background 140ms ease, color 140ms ease, transform 100ms ease;
+  font-size: 15px;
+  font-weight: 600;
+  transition: background 100ms ease;
 }
 
 .button:hover {
@@ -102,17 +90,16 @@ a:focus-visible {
 }
 
 .button:active {
-  transform: scale(0.97);
+  opacity: 0.9;
 }
 
 .button--primary {
   background: var(--accent);
-  color: var(--canvas);
-  font-weight: 600;
+  color: #fff;
 }
 
 .button--primary:hover {
-  background: #3be0b6;
+  background: var(--accent-hover);
 }
 
 .button--text {
@@ -120,22 +107,23 @@ a:focus-visible {
   padding-inline: 8px;
   background: transparent;
   color: var(--text-secondary);
-  font-size: 12px;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .button--text:hover {
-  background: transparent;
+  background: var(--surface-2);
   color: var(--ink);
 }
 
-/* --- Switch toggle --- */
+/* --- Toggle switch --- */
 
 .switch {
   position: relative;
   display: inline-flex;
-  width: 40px;
-  height: 22px;
-  flex: 0 0 40px;
+  width: 44px;
+  height: 24px;
+  flex: 0 0 44px;
   cursor: pointer;
 }
 
@@ -149,21 +137,22 @@ a:focus-visible {
 .switch__track {
   position: absolute;
   inset: 0;
-  border-radius: 11px;
+  border-radius: 12px;
   background: var(--surface-raised);
-  transition: background 180ms ease;
+  transition: background 200ms ease;
 }
 
 .switch__track::after {
   position: absolute;
   top: 3px;
   left: 3px;
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
-  background: var(--text-secondary);
+  background: #fff;
   content: "";
-  transition: transform 180ms cubic-bezier(0.4, 0, 0.2, 1), background 180ms ease;
+  transition: transform 200ms ease;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
 }
 
 .switch input:checked + .switch__track {
@@ -171,48 +160,34 @@ a:focus-visible {
 }
 
 .switch input:checked + .switch__track::after {
-  background: var(--canvas);
-  transform: translateX(18px);
+  transform: translateX(20px);
 }
 
 .switch input:focus-visible + .switch__track {
-  box-shadow: 0 0 0 2px var(--canvas), 0 0 0 4px var(--accent-glow);
+  box-shadow: 0 0 0 2px var(--canvas), 0 0 0 4px var(--accent);
 }
 
 /* --- Feature list & rows --- */
 
 .feature-list {
   display: grid;
-  gap: 2px;
+  gap: 1px;
 }
 
 .feature-row {
-  position: relative;
   display: flex;
-  min-height: 50px;
+  min-height: 52px;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 10px 12px 10px 16px;
+  padding: 10px 12px;
   border-radius: var(--radius-sm);
   background: transparent;
-  transition: background 140ms ease;
-}
-
-.feature-row::before {
-  position: absolute;
-  top: 12px;
-  bottom: 12px;
-  left: 0;
-  width: 3px;
-  border-radius: 2px;
-  background: var(--line);
-  content: "";
-  transition: background 200ms ease;
+  transition: background 100ms ease;
 }
 
 .feature-row:hover {
-  background: var(--surface-1);
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .feature-row:not([aria-disabled="true"]) {
@@ -227,12 +202,6 @@ a:focus-visible {
   opacity: 0.4;
 }
 
-/* Signal bar lights up when switch is checked */
-.feature-row:has(input:checked)::before {
-  background: var(--accent);
-  box-shadow: 0 0 8px var(--accent-dim);
-}
-
 .feature-copy {
   min-width: 0;
 }
@@ -241,32 +210,28 @@ a:focus-visible {
   display: block;
   color: var(--ink);
   cursor: pointer;
-  font-size: 13px;
-  font-weight: 500;
-  letter-spacing: -0.01em;
+  font-size: 15px;
+  font-weight: 400;
 }
 
 .feature-description {
-  margin: 3px 0 0;
+  margin: 2px 0 0;
   color: var(--text-secondary);
-  font-size: 12px;
-  line-height: 1.4;
+  font-size: 13px;
+  line-height: 1.38;
 }
 
 /* --- Panel card --- */
 
 .panel {
-  border: 1px solid var(--line);
   border-radius: var(--radius-card);
   background: var(--surface-1);
 }
 
 .eyebrow {
-  color: var(--accent);
-  font-size: 11px;
+  color: var(--text-secondary);
+  font-size: 13px;
   font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
 }
 
 /* --- Confirmation dialog --- */
@@ -278,30 +243,28 @@ a:focus-visible {
   border-radius: var(--radius-card);
   background: var(--surface-1);
   color: var(--ink);
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.7);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
 }
 
 .confirmation-dialog::backdrop {
-  background: rgba(6, 10, 16, 0.8);
-  backdrop-filter: blur(6px);
+  background: rgba(0, 0, 0, 0.7);
 }
 
 .confirmation-dialog__body {
-  padding: 24px 24px 16px;
+  padding: 20px 20px 14px;
 }
 
 .confirmation-dialog h2 {
-  margin: 0 0 10px;
-  font-size: 18px;
-  font-weight: 600;
-  letter-spacing: -0.02em;
+  margin: 0 0 8px;
+  font-size: 20px;
+  font-weight: 700;
 }
 
 .confirmation-dialog p {
   margin: 0;
   color: var(--text-secondary);
-  font-size: 14px;
-  line-height: 1.5;
+  font-size: 15px;
+  line-height: 1.4;
   white-space: pre-line;
 }
 
@@ -309,7 +272,7 @@ a:focus-visible {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
-  padding: 0 24px 24px;
+  padding: 0 20px 20px;
 }
 
 @media (prefers-reduced-motion: reduce) {
