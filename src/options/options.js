@@ -8,7 +8,7 @@
     mergeSettings,
     mergeStats,
   } = QuietFeed;
-  const { createFeatureRow } = QuietFeedUI;
+  const { createFeatureRow, createThemeToggle, loadAndApplyTheme } = QuietFeedUI;
 
   let settings = null;
   let toastTimer = null;
@@ -16,6 +16,8 @@
   const pendingKeys = new Set();
 
   document.querySelector("#version").textContent = `v${chrome.runtime.getManifest().version}`;
+  document.querySelector("#theme-toggle-mount").append(createThemeToggle());
+  loadAndApplyTheme();
   document.querySelector("#reset-stats").addEventListener("click", resetStats);
   document.querySelector("#reset-settings").addEventListener("click", resetSettings);
   document.querySelector("#export-settings").addEventListener("click", exportSettings);

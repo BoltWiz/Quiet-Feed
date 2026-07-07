@@ -78,7 +78,76 @@
     return row;
   }
 
-  const api = Object.freeze({ createFeatureRow });
+  const THEME_KEY = "quietFeedTheme";
+  const THEME_VALUES = ["system", "light", "dark"];
+
+  function applyTheme(value) {
+    const theme = THEME_VALUES.includes(value) ? value : "system";
+    if (theme === "system") {
+      document.documentElement.removeAttribute("data-theme");
+    } else {
+      document.documentElement.setAttribute("data-theme", theme);
+    }
+  }
+
+  function loadAndApplyTheme() {
+    chrome.storage.local.get(THEME_KEY).then((stored) => {
+      applyTheme(stored[THEME_KEY]);
+    }).catch(() => {});
+  }
+
+  /**
+   * Creates a three-button theme toggle (light / system / dark).
+   * Reads & writes `quietFeedTheme` in chrome.storage.local.
+   * @returns {HTMLElement}
+   */
+  function createThemeToggle() {
+    const current = document.documentElement.getAttribute("data-theme") || "system";
+
+    const icons = {
+      light: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`,
+      system: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>`,
+      dark: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`,
+    };
+    const labels = { light: "Light", system: "System", dark: "Dark" };
+
+    const wrapper = document.createElement("div");
+    wrapper.className = "theme-toggle";
+    wrapper.setAttribute("role", "group");
+    wrapper.setAttribute("aria-label", "Theme");
+
+    const buttons = {};
+    for (const key of ["light", "system", "dark"]) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "theme-toggle__btn";
+      btn.setAttribute("aria-label", labels[key]);
+      btn.setAttribute("aria-pressed", String(current === key));
+      btn.innerHTML = icons[key];
+      btn.addEventListener("click", () => {
+        chrome.storage.local.set({ [THEME_KEY]: key }).catch(() => {});
+        applyTheme(key);
+        for (const [k, b] of Object.entries(buttons)) {
+          b.setAttribute("aria-pressed", String(k === key));
+        }
+      });
+      buttons[key] = btn;
+      wrapper.append(btn);
+    }
+
+    chrome.storage.onChanged.addListener((changes, area) => {
+      if (area !== "local" || !changes[THEME_KEY]) return;
+      const next = changes[THEME_KEY].newValue || "system";
+      applyTheme(next);
+      for (const [k, b] of Object.entries(buttons)) {
+        b.setAttribute("aria-pressed", String(k === next));
+      }
+    });
+
+    return wrapper;
+  }
+
+  const api = Object.freeze({ createFeatureRow, createThemeToggle, loadAndApplyTheme });
   global.QuietFeedUI = api;
   if (typeof module !== "undefined" && module.exports) {
     module.exports = api;

@@ -2,7 +2,7 @@
   "use strict";
 
   const { FEATURES, STORAGE_KEYS, mergeSettings, mergeStats } = QuietFeed;
-  const { createFeatureRow } = QuietFeedUI;
+  const { createFeatureRow, createThemeToggle, loadAndApplyTheme } = QuietFeedUI;
   const featureList = document.querySelector("#feature-list");
   const reloadAlert = document.querySelector("#reload-alert");
   const reloadButton = document.querySelector("#reload-facebook");
@@ -14,6 +14,8 @@
 
   document.querySelector("#version").textContent = `v${chrome.runtime.getManifest().version}`;
   document.querySelector("#open-options").addEventListener("click", openOptions);
+  document.querySelector("#theme-toggle-mount").append(createThemeToggle());
+  loadAndApplyTheme();
   reloadButton.addEventListener("click", reloadFacebook);
   document.querySelector("#health-reload").addEventListener("click", reloadFacebook);
   document.querySelector("#dismiss-reload").addEventListener("click", () => {
